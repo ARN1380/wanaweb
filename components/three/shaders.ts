@@ -119,8 +119,13 @@ void main() {
   vec3 color = mix(uColorA, uColorB, smoothstep(0.0, 0.65, t));
   color = mix(color, uColorC, smoothstep(0.5, 1.0, t) * 0.9);
 
-  // Rim light keeps the silhouette readable against the dark canvas.
-  color += fresnel * vec3(0.5, 0.85, 1.0) * 1.15;
+  // Rim light keeps the silhouette readable against the dark canvas. Kept
+  // deliberately restrained: the headline sits over the core, so a hot rim
+  // plus bloom is what makes body copy hard to read.
+  color += fresnel * vec3(0.5, 0.85, 1.0) * 0.85;
+
+  // Overall exposure trim. Raise this only after checking hero text legibility.
+  color *= 0.85;
 
   gl_FragColor = vec4(color, 1.0);
 }

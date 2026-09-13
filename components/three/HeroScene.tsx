@@ -183,12 +183,16 @@ export default function HeroScene({ active = true }: HeroSceneProps) {
         <ParticleField animate={animate} />
 
         <EffectComposer multisampling={0}>
+          {/*
+            Threshold is intentionally high: only genuine highlights bloom, so
+            the core's mid-tones no longer bleed over the headline text.
+          */}
           <Bloom
-            intensity={1.25}
-            luminanceThreshold={0.2}
-            luminanceSmoothing={0.3}
+            intensity={0.9}
+            luminanceThreshold={0.35}
+            luminanceSmoothing={0.32}
             mipmapBlur
-            radius={0.75}
+            radius={0.65}
           />
           <Vignette offset={0.3} darkness={0.72} />
         </EffectComposer>

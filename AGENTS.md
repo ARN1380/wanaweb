@@ -278,6 +278,11 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
    prints an informational "Experiments (use with caution)" line for it. That is
    expected, not a warning. It exists to tree-shake `motion` and
    `@react-three/drei`; remove it only if it ever changes the rendered output.
+10. **The hero core is intentionally dim.** It sits directly behind the headline,
+    so its exposure is a legibility budget, not a taste call. Current values:
+    fresnel `0.85`, a global `color *= 0.85` in `coreFragmentShader`, and bloom at
+    `luminanceThreshold 0.35` / `intensity 0.9`. If you brighten any of these,
+    re-check that the hero `h1` and sub-copy are still comfortably readable.
 
 ### Placeholders the human must supply
 
@@ -387,6 +392,33 @@ SEO routes. Pushed as a second commit on `main`.
 case-study imagery — because the Selected Work panels currently use only
 generated gradients. Everything else in the backlog is optional polish. The
 repository is green and safe to extend.
+
+### 2026-09-13 · Cline (session 3) · hero legibility fix
+
+**What I was doing.** Human feedback: the hero core was bright enough behind the
+headline that the copy was hard to read. Requested scope was explicitly narrow —
+*reduce the light of the core a little*, nothing else.
+
+**What I did.** A focused exposure trim, no layout or structural change:
+
+- `components/three/shaders.ts` — `coreFragmentShader`: fresnel rim multiplier
+  `1.15 → 0.85`, and added a global `color *= 0.85` exposure trim.
+- `components/three/HeroScene.tsx` — bloom `intensity 1.25 → 0.9`,
+  `luminanceThreshold 0.2 → 0.35`, `luminanceSmoothing 0.3 → 0.32`,
+  `radius 0.75 → 0.65`.
+
+Raising the bloom threshold is the change that actually fixes readability: at
+`0.2`, the core's mid-tones were blooming into a halo that washed across the
+text. At `0.35` only genuine highlights glow.
+
+**Deliberately not changed:** hero layout, core position, particle field, the
+`noise-veil`, vignette, or any typography. The human asked for a light touch.
+
+**Verification.** `npx tsc --noEmit` clean · `npm run lint` clean ·
+`npm run build` `Compiled successfully` · smoke test `/` HTTP 200.
+
+**Recorded** as §8.10 so a future agent treats the hero exposure as a legibility
+budget rather than a knob to turn up freely.
 
 
 
