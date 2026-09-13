@@ -3,10 +3,14 @@
 import { useState } from "react";
 
 import { FadeUp, Kicker, MaskedLines } from "@/components/Reveal";
-import { faq } from "@/lib/faq";
+import type { Dictionary } from "@/lib/dictionaries/types";
 import { cn } from "@/lib/util";
 
-export default function Faq() {
+type FaqProps = {
+  faq: Dictionary["faq"];
+};
+
+export default function Faq({ faq }: FaqProps) {
   // The first answer is open so the pattern is legible without interaction.
   const [open, setOpen] = useState<number | null>(0);
 
@@ -34,11 +38,8 @@ export default function Faq() {
                 href="#contact"
                 className="group inline-flex w-fit items-center gap-2 font-mono text-[0.66rem] tracking-[0.18em] text-lime uppercase"
               >
-                Ask us directly
-                <span
-                  aria-hidden="true"
-                  className="transition-transform duration-500 ease-expo group-hover:translate-x-1"
-                >
+                {faq.cta}
+                <span aria-hidden="true" className="arrow-forward">
                   →
                 </span>
               </a>
@@ -57,7 +58,7 @@ export default function Faq() {
                       onClick={() => setOpen(isOpen ? null : index)}
                       aria-expanded={isOpen}
                       aria-controls={`faq-panel-${index}`}
-                      className="flex w-full items-start justify-between gap-6 py-6 text-left"
+                      className="flex w-full items-start justify-between gap-6 py-6 text-start"
                     >
                       <span className="flex items-baseline gap-4">
                         <span className="font-mono text-[0.58rem] tracking-[0.2em] text-lime/70">
@@ -100,7 +101,7 @@ export default function Faq() {
                     <div className="overflow-hidden">
                       <p
                         className={cn(
-                          "max-w-2xl pb-7 pl-0 text-sm leading-relaxed text-muted transition-opacity duration-500 sm:pl-10 sm:text-base",
+                          "max-w-2xl pb-7 ps-0 text-sm leading-relaxed text-muted transition-opacity duration-500 sm:ps-10 sm:text-base",
                           isOpen ? "opacity-100" : "opacity-0",
                         )}
                       >

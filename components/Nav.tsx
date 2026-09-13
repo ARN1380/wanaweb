@@ -7,16 +7,23 @@ import {
   useScroll,
   useSpring,
 } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Logo from "@/components/Logo";
-import { nav, site } from "@/lib/content";
+import type { Dictionary } from "@/lib/dictionaries/types";
+import type { Locale } from "@/lib/i18n";
 import { cn, setSmoothScrollStopped } from "@/lib/util";
 
-const SECTION_IDS = nav.map((item) => item.href.replace("#", ""));
+type NavProps = {
+  locale: Locale;
+  nav: Dictionary["nav"];
+  site: Dictionary["site"];
+  ui: Dictionary["ui"];
+};
 
 /** Highlights the nav item for whichever section owns the viewport middle. */
-function useActiveSection() {
+function useActiveSection(ids: readonly string[]) {
   const [active, setActive] = useState("");
 
   useEffect(() => {
@@ -30,21 +37,29 @@ function useActiveSection() {
       { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.2, 0.6] },
     );
 
-    SECTION_IDS.forEach((id) => {
+    ids.forEach((id) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [ids]);
 
   return active;
 }
 
-export default function Nav() {
+export default function Nav({ locale, nav, site, ui }: NavProps) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const active = useActiveSection();
+
+  // The list is derived from props, so it has to be memoised: a fresh array on
+  // every render would re-subscribe the observer below in a loop.
+  const ids = useMemo(
+    () => nav.map((item) => item.href.replace("#", "")),
+    [nav],
+  );
+
+  const active = useActiveSection(ids);
 
   const { scrollY, scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, {
@@ -99,12 +114,12 @@ export default function Nav() {
             <a
               href="#top"
               className="group flex items-center"
-              aria-label={`${site.name} — back to top`}
+              aria-label={`${site.name} — ${ui.backToTop}`}
             >
               <Logo className="transition-opacity duration-300 group-hover:opacity-80" />
             </a>
 
-            <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
+            <nav aria-label={ui.navPrimary} className="hidden items-center gap-1 lg:flex">
               {nav.map((item) => {
                 const id = item.href.replace("#", "");
                 const isActive = active === id;
@@ -137,14 +152,20 @@ export default function Nav() {
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-lime opacity-70" />
                   <span className="relative inline-flex size-1.5 rounded-full bg-lime" />
                 </span>
-                Open for work
+                {ui.openForWork}
               </span>
+
+              <LanguageSwitcher
+                locale={locale}
+                label={ui.language.label}
+                className="hidden sm:flex"
+              />
 
               <a
                 href="#contact"
                 className="hidden rounded-full bg-bone px-5 py-2.5 font-mono text-[0.7rem] tracking-[0.16em] text-ink uppercase transition-colors duration-300 hover:bg-lime sm:inline-flex"
               >
-                Start a project
+                {ui.startProject}
               </a>
 
               <button
@@ -154,7 +175,9 @@ export default function Nav() {
                 aria-controls="mobile-menu"
                 className="relative flex size-10 items-center justify-center rounded-full border border-hairline text-bone transition-colors duration-300 hover:border-lime/60 lg:hidden"
               >
-                <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+                <span className="sr-only">
+                  {open ? ui.menuClose : ui.menuOpen}
+                </span>
                 <span
                   aria-hidden="true"
                   className={cn(
@@ -186,7 +209,7 @@ export default function Nav() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[65] flex flex-col justify-between bg-ink/95 px-[var(--shell)] pt-28 pb-10 backdrop-blur-xl lg:hidden"
           >
-            <nav aria-label="Mobile" className="flex flex-col">
+            <nav aria-label={ui.navMobile} className="flex flex-col">
               {nav.map((item, index) => (
                 <motion.a
                   key={item.href}
@@ -210,6 +233,7 @@ export default function Nav() {
             </nav>
 
             <div className="flex flex-col gap-5 font-mono text-[0.7rem] tracking-[0.16em] uppercase">
+              <LanguageSwitcher locale={locale} label={ui.language.label} className="w-fit" />
               <a href={`mailto:${site.email}`} className="text-lime">
                 {site.email}
               </a>

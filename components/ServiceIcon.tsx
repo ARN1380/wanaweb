@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-import type { Service } from "@/lib/work";
+import type { ServiceIconName } from "@/lib/dictionaries/types";
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -13,7 +13,7 @@ const base = {
   strokeLinejoin: "round" as const,
 };
 
-const shapes: Record<Service["icon"], ReactNode> = {
+const shapes: Record<ServiceIconName, ReactNode> = {
   layout: (
     <>
       <rect x="3" y="3.5" width="18" height="17" rx="2.5" />
@@ -54,7 +54,7 @@ const shapes: Record<Service["icon"], ReactNode> = {
 export default function ServiceIcon({
   name,
   ...props
-}: IconProps & { name: Service["icon"] }) {
+}: IconProps & { name: ServiceIconName }) {
   return (
     <svg {...base} aria-hidden="true" {...props}>
       {shapes[name]}

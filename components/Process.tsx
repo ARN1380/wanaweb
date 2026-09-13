@@ -5,10 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
+import type { Dictionary } from "@/lib/dictionaries/types";
 import { cn } from "@/lib/util";
-import { process } from "@/lib/work";
 
-type Step = (typeof process.steps)[number];
+type Step = Dictionary["process"]["steps"][number];
+
+type ProcessProps = {
+  process: Dictionary["process"];
+};
 
 function StepCard({
   step,
@@ -61,7 +65,7 @@ function StepCard({
   );
 }
 
-export default function Process() {
+export default function Process({ process }: ProcessProps) {
   const [active, setActive] = useState(0);
   const onActive = useCallback((index: number) => setActive(index), []);
 

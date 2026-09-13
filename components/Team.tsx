@@ -1,15 +1,19 @@
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
-import { team, type TeamMember } from "@/lib/people";
+import type { Accent, Dictionary } from "@/lib/dictionaries/types";
 import { cn } from "@/lib/util";
 
-const accentStyles: Record<TeamMember["accent"], string> = {
+type TeamProps = {
+  team: Dictionary["team"];
+};
+
+const accentStyles: Record<Accent, string> = {
   violet: "from-violet via-cyan/70 to-violet/30",
   cyan: "from-cyan via-lime/60 to-cyan/30",
   lime: "from-lime via-violet/60 to-lime/30",
 };
 
-export default function Team() {
+export default function Team({ team }: TeamProps) {
   return (
     <section id="team" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-[var(--shell)]">

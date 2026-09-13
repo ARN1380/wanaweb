@@ -1,8 +1,12 @@
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
-import { stack } from "@/lib/work";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
-export default function Stack() {
+type StackProps = {
+  stack: Dictionary["stack"];
+};
+
+export default function Stack({ stack }: StackProps) {
   return (
     <section id="stack" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-[var(--shell)]">
@@ -39,7 +43,7 @@ export default function Stack() {
                         aria-hidden="true"
                         className="translate-x-0 font-mono text-xs text-lime opacity-0 transition-all duration-500 ease-expo group-hover/item:translate-x-0.5 group-hover/item:opacity-100"
                       >
-                        →
+                        <span className="flip-rtl">→</span>
                       </span>
                     </li>
                   ))}

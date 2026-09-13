@@ -1,9 +1,13 @@
 import Logo from "@/components/Logo";
-import { footer } from "@/lib/contact";
-import { site } from "@/lib/content";
 import { FadeUp } from "@/components/Reveal";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
-export default function Footer() {
+type FooterProps = {
+  footer: Dictionary["footer"];
+  site: Dictionary["site"];
+};
+
+export default function Footer({ footer, site }: FooterProps) {
   const year = new Date().getFullYear();
 
   return (
@@ -20,7 +24,7 @@ export default function Footer() {
               {site.email}
               <span
                 aria-hidden="true"
-                className="transition-transform duration-300 ease-expo group-hover:translate-x-1"
+                className="arrow-forward [--arrow-duration:0.3s]"
               >
                 →
               </span>

@@ -7,14 +7,19 @@ import { useRef } from "react";
 import Magnetic from "@/components/Magnetic";
 import Marquee from "@/components/Marquee";
 import { FadeUp, MaskedLines } from "@/components/Reveal";
-import { hero, marqueeItems } from "@/lib/content";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
 const HeroScene = dynamic(() => import("@/components/three/HeroScene"), {
   ssr: false,
   loading: () => <div className="canvas-fallback absolute inset-0" />,
 });
 
-export default function Hero() {
+type HeroProps = {
+  hero: Dictionary["hero"];
+  marquee: Dictionary["marquee"];
+};
+
+export default function Hero({ hero, marquee }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const inView = useInView(sectionRef, { amount: 0 });
 
@@ -87,10 +92,7 @@ export default function Hero() {
                   className="group inline-flex items-center gap-2.5 rounded-full bg-lime px-6 py-3.5 font-mono text-[0.72rem] tracking-[0.18em] text-ink uppercase transition-colors duration-300 hover:bg-bone"
                 >
                   {hero.primaryCta.label}
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform duration-500 ease-expo group-hover:translate-x-1"
-                  >
+                  <span aria-hidden="true" className="arrow-forward">
                     →
                   </span>
                 </a>
@@ -118,7 +120,7 @@ export default function Hero() {
       </section>
 
       <div className="hairline-t hairline-b relative z-10 bg-ink/60 py-5 backdrop-blur-sm">
-        <Marquee items={marqueeItems} duration={48} itemClassName="text-bone/70" />
+        <Marquee items={marquee} duration={48} itemClassName="text-bone/70" />
       </div>
     </>
   );

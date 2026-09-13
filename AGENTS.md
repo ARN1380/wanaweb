@@ -47,8 +47,9 @@ pitch is threefold, and the site must *demonstrate* all three rather than claim 
 2. **Clean code** — strict TypeScript, small composable components, documented.
 3. **Real 3D** — hand-written WebGL/GLSL, not decorative stock animation.
 
-It is a single-page, statically prerendered site (App Router) with two live WebGL
-scenes, an editorial design system, and a contact form that hands off to email.
+It is a single-page, statically prerendered site (App Router) published in
+**English, Persian and Arabic**, with two live WebGL scenes, an editorial design
+system, and a contact form that hands off to email.
 
 **Live repository:** https://github.com/ARN1380/wanaweb
 
@@ -74,8 +75,12 @@ scenes, an editorial design system, and a contact form that hands off to email.
 | **Selected Work** | ✅ Done | Four case studies, sticky-stacked cards |
 | **FAQ** | ✅ Done | Accessible accordion |
 | **Intro preloader** | ✅ Done | Once per session, respects reduced motion |
-| **Custom 404** | ✅ Done | `app/not-found.tsx` |
-| **sitemap / robots** | ✅ Done | `app/sitemap.ts`, `app/robots.ts` |
+| **Multilingual routing** | ✅ Done | `/` = English, `/fa`, `/ar`; all three prerendered |
+| **RTL + locale fonts** | ✅ Done | `html[lang]` type roles, `dir="rtl"` typography — see §5 |
+| **Language switcher** | ✅ Done | `components/LanguageSwitcher.tsx`, desktop nav + mobile menu |
+| **Custom 404** | ✅ Done | `app/[locale]/[...rest]/not-found.tsx`, localised |
+| **sitemap / robots** | ✅ Done | `app/sitemap.ts` (hreflang), `app/robots.ts` |
+| Persian / Arabic copy review | ⬜ Blocked | Machine-drafted, needs a native speaker — see §8 |
 | Real project photography | ⛔ Out of scope | No image assets by design — see §8 |
 | Contact backend | ⛔ Out of scope | Deliberately client-side only — see §8 |
 | Deployment (Vercel) | ⬜ Not done | Repo pushes fine; no Vercel project linked |
@@ -89,12 +94,16 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ⛔ deliberately not 
 
 ```
 wanaweb/
+├─ proxy.ts              ← locale routing: `/` → `/en`, `/en/…` → `/`, unknown → default
 ├─ app/
 │  ├─ globals.css        ← THE design system. Single source of visual truth.
-│  ├─ layout.tsx         ← fonts, metadata, chrome (Cursor/SmoothScroll/Nav/Footer/Preloader)
-│  ├─ page.tsx           ← section composition + JSON-LD. Keep this file thin.
-│  ├─ not-found.tsx      ← custom 404
-│  ├─ sitemap.ts         ← generated /sitemap.xml
+│  ├─ [locale]/
+│  │  ├─ layout.tsx      ← THE root layout: <html lang dir>, fonts, metadata, chrome
+│  │  ├─ page.tsx        ← section composition + JSON-LD. Keep this file thin.
+│  │  └─ [...rest]/
+│  │     ├─ page.tsx     ← anything else under a locale: calls notFound()
+│  │     └─ not-found.tsx← the 404, localised from the request header
+│  ├─ sitemap.ts         ← generated /sitemap.xml, with hreflang alternates
 │  └─ robots.ts          ← generated /robots.txt
 ├─ components/
 │  ├─ three/
@@ -103,25 +112,29 @@ wanaweb/
 │  │  ├─ LabScene.tsx    ← lab canvas: composition, lights, OrbitControls
 │  │  └─ LabObjects.tsx  ← knot / glass orbs / instanced cube ring
 │  ├─ sections           ← Hero, Manifesto, Work, Services, Lab, Process,
-│  │                       Stack, Team, Testimonials, Faq, Contact
-│  └─ atoms              ← Nav, Footer, Logo, Reveal, SectionHeading, Marquee,
-│                          Magnetic, Counter, Cursor, SmoothScroll, Preloader,
-│                          ServiceIcon
+│  │                       Stack, Team, Testimonials, Faq, Contact│  └─ atoms             ← Nav, Footer, Logo, LanguageSwitcher, Reveal,
+│                          SectionHeading, Marquee, Magnetic, Counter, Cursor,
+│                          SmoothScroll, Preloader, ServiceIcon
 └─ lib/
-   ├─ content.ts         ← brand, nav, hero, marquee, stats, manifesto
-   ├─ projects.ts        ← case studies for Selected Work
-   ├─ work.ts            ← services, process, stack, 3D-lab copy
-   ├─ people.ts          ← team, testimonials
-   ├─ faq.ts             ← FAQ
-   ├─ contact.ts         ← contact copy + footer columns
+   ├─ i18n.ts            ← locale list, per-locale config, URL helpers, LOCALE_HEADER
+   ├─ dictionaries/
+   │  ├─ en.ts           ← the reference dictionary: schema + copy
+   │  ├─ fa.ts, ar.ts    ← translations, type-checked against en.ts
+   │  ├─ types.ts        ← Widen, Dictionary, Accent, ServiceIconName
+   │  └─ index.ts        ← getDictionary(locale)
    └─ util.ts            ← cn, splitEmphasis, createRandom, prefersReducedMotion,
                            setSmoothScrollStopped
 ```
 
-**Data flow:** `lib/*` (content) → section components → atoms. Atoms hold no
-marketing copy. `app/globals.css` is imported once, in `layout.tsx`.
+**Data flow:** `getDictionary(locale)` → `app/[locale]/page.tsx` → section
+components → atoms. Atoms hold no marketing copy. `app/globals.css` is imported
+once, in the root layout.
 
-**Hard rule: never hardcode a user-visible string in a component.** It belongs in `lib/`.
+**Hard rule: never hardcode a user-visible string in a component.** It belongs in
+`lib/dictionaries/*.ts` — in *every* locale. `en.ts` is the schema.
+
+**Hard rule: sections never import a dictionary.** They receive the copy they
+render as props, so a page ships one language's strings and nothing else.
 
 ---
 
@@ -141,6 +154,29 @@ marketing copy. `app/globals.css` is imported once, in `layout.tsx`.
 - **File size limit:** the editor tool rejects a single edit over ~6000 characters.
   Split large files into small sequential edits (create, then append using a unique
   `old_text` anchor). This bites everyone — plan for it.
+
+### Internationalisation conventions
+
+- **Copy lives in `lib/dictionaries/`, never in a component.** `en.ts` is the
+  schema: `Dictionary` is derived from it, so adding a field there and forgetting
+  it in `fa.ts`/`ar.ts` is a `tsc` error, not a half-translated page.
+- **Never import a dictionary into a section.** Sections take the slice they
+  render as a prop (`dict.hero`, `dict.faq`, `ui`, …). Client components in
+  particular: whatever you pass is serialised into the RSC payload, so slice,
+  do not hand over the whole dictionary.
+- **`emphasis` must be an exact substring of its `title`/`headline` line.**
+  `MaskedLines` uses `splitEmphasis` to find the word it renders in the accent
+  face; if it does not match, that heading silently loses its accent styling.
+- **Latin stays Latin.** Brand names, technology names, project ids, accent
+  names, `href`s and numerals are the same in every dictionary. Do not localise
+  digits — the section numbering and metrics are Latin by design.
+- **New locale roles go in `globals.css`.** Add the family in
+  `app/[locale]/layout.tsx`, then map `--font-body` / `--font-label` /
+  `--font-accent` under `html[lang="…"]`.
+- **RTL is CSS, not branches.** Use logical utilities (`ps-*`, `text-start`), the
+  `.arrow-forward` / `.flip-rtl` classes for direction-aware glyphs, and check
+  that `document.documentElement.scrollWidth === clientWidth` on a RTL page
+  before you call it done.
 
 ### Motion conventions
 
@@ -169,7 +205,9 @@ marketing copy. `app/globals.css` is imported once, in `layout.tsx`.
 
 **Type:** Geist (display/UI) · Geist Mono (kickers, labels, numerals) ·
 Instrument Serif *italic* (editorial accent words, applied via
-`<em className="serif-accent">` inside `MaskedLines`).
+`<em className="serif-accent">` inside `MaskedLines`). Persian and Arabic swap
+in their own families through the same three roles — see *Languages and type
+roles* at the end of this section.
 
 **Custom utilities in `globals.css`:** `kicker`, `display-type`, `serif-accent`,
 `iridescent-text`, `glass`, `hairline-t`, `hairline-b`.
@@ -178,6 +216,20 @@ Instrument Serif *italic* (editorial accent words, applied via
 **Cursor:** `body.has-custom-cursor`; elements opt in with `data-cursor="hover"|"drag"`.
 **Z-index map:** content `z-10` · nav `z-70` · progress bar `z-80` · grain `z-90` ·
 preloader `z-95` · cursor `z-100`. Respect this map; do not invent new layers.
+
+**Languages and type roles.** Every type style resolves through three variables —
+`--font-body` (display + body), `--font-label` (kickers, labels, numerals),
+`--font-accent` (the editorial `serif-accent`) — which `html[lang]` swaps per
+locale. `app/globals.css` also carries the only RTL-specific rules there are, and
+they are typographic necessities rather than taste: Arabic script joins cursively,
+so tracking is zeroed, and its ascenders/descenders need more leading than the
+Latin ramp's `0.92` or the masked reveal clips them. A new locale needs no
+component changes — only a dictionary and a `html[lang]` block.
+
+**Locale URLs.** `lib/i18n.ts` owns the mapping: `localePath()` is the internal
+route the router matches (`/en`, `/fa`, `/ar`), `publicHref()` is the canonical
+URL to link and crawl (`/`, `/fa`, `/ar`). Use `publicHref` for anything a human
+or a crawler follows; only `proxy.ts` deals in `localePath`.
 
 **Section numbering:** `SectionHeading` takes an explicit `index`. The numbered run
 is Studio=1, Services=2, Lab=3, Process=4, Stack=5, Team=6, Signal=7, Contact=8.
@@ -205,6 +257,28 @@ curl.exe -s -o page.html -w "%{http_code}" http://localhost:3123/
 For step 4, grep the saved HTML for headline copy and for `canvas-fallback` (the
 3D placeholder that must appear in SSR output). A passing smoke test is
 **HTTP 200 + expected copy present + no React error markers**.
+
+**Multilingual smoke test** — run this as well whenever you touch routing, fonts
+or a dictionary. The status codes *are* the routing contract:
+
+```powershell
+$expect = @{ "/" = 200; "/fa" = 200; "/ar" = 200; "/en" = 308; "/nope" = 404; "/fa/nope" = 404 }
+foreach ($p in $expect.Keys) {
+  "$p -> $(curl.exe -s -o /dev/null -w '%{http_code}' "http://localhost:3123$p") (expect $($expect[$p]))"
+}
+# The document must declare the language it is written in, not just return it:
+curl.exe -s http://localhost:3123/fa | Select-String 'lang="fa"','dir="rtl"'
+curl.exe -s http://localhost:3123/ar | Select-String 'lang="ar"','dir="rtl"'
+```
+
+Two checks an HTML grep cannot make — do them in a browser (headless Chrome over
+the DevTools protocol works well and is how the last session verified this):
+
+- `document.documentElement.clientWidth === scrollWidth`. RTL layouts overflow
+  silently; the whole page gaining a horizontal scrollbar is the classic symptom.
+- `getComputedStyle(document.body).fontFamily` starts with the locale's family
+  (Vazirmatn / Noto Sans Arabic), and `document.fonts` shows it as loaded. If the
+  family is missing from the CSS, the page silently falls back to a system font.
 
 ### Environment gotchas (learned the hard way — do not re-learn these)
 
@@ -284,19 +358,39 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
     `luminanceThreshold 0.35` / `intensity 0.9`. If you brighten any of these,
     re-check that the hero `h1` and sub-copy are still comfortably readable.
 
+11. **The RTL typographic overrides in `globals.css` are required, not stylistic.**
+    Arabic script joins cursively, so the Latin ramp's tracking (positive *and*
+    negative) has to be zeroed for `dir="rtl"`, and the display leading is raised
+    from `0.92` to `1.3` — otherwise the masked line reveal clips Persian and
+    Arabic descenders. Sizes, weights, gradients, masks and timings are unchanged;
+    only these two Latin-only properties stand down.
+12. **The Persian and Arabic fonts are not preloaded.** They are instantiated with
+    `preload: false` so the English page's critical path stays exactly as it was;
+    the browser fetches them when a rule actually uses them. They are still
+    self-hosted by `next/font` — no third-party font request at runtime. The swap
+    lands behind the intro curtain, and on repeat visits the font is cached.
+13. **The fa/ar copy is machine-drafted.** It is written to be idiomatic and to
+    exercise the layout (same line counts, same emphasis words), but nobody has
+    proof-read it as a native speaker. Treat it as a first pass — see the status
+    board.
+
 ### Placeholders the human must supply
 
 - `site.url` (`https://wanaweb.studio`) — used as `metadataBase` and in JSON-LD.
 - `site.email` (`hello@wanaweb.studio`) — used by the contact form and footer.
 - `site.socials` — X / LinkedIn / Dribbble URLs are dummies.
 - Team members (`lib/people.ts`), testimonials (same file).
-- Case studies (`lib/projects.ts`) — names, metrics and outcomes are illustrative.
+- A native-speaker review of `lib/dictionaries/fa.ts` and `ar.ts` — the tone, the
+  pricing bands and the testaments all deserve a real reader before launch.
+- Case studies (`lib/dictionaries/en.ts`, `projects.items`) — client names, metrics
+  and outcomes are illustrative.
 
 ---
 
 ## 9. Recipe: how to add a new section
 
-1. Add the copy to the right file in `lib/` (create a new file if the topic is new).
+1. Add the copy to **every** dictionary in `lib/dictionaries/` — `en.ts` first, it
+   is the schema — and let `tsc` tell you what the other two are missing.
 2. Create `components/YourSection.tsx`. Server component unless it needs hooks.
 3. If it needs a heading, use `<SectionHeading index={n} label lines emphasis body />`
    and renumber the numbered run (§5).
@@ -322,6 +416,8 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
 | 7 | Lighthouse CI | Same reason | `@lhci/cli` against the Vercel preview URL |
 | 8 | Heading-level audit | Ensure one `h1` and no skipped levels | Hero owns the `h1`; every section uses `h2` |
 | 9 | WebGPU renderer path | Three.js/TSL alternative for capable browsers | Only if it degrades cleanly; see Codrops TSL experiments |
+| 10 | Native-speaker pass on the fa/ar copy | The dictionaries are machine-drafted, not proof-read | Read `lib/dictionaries/fa.ts` and `ar.ts` end to end; keep every `emphasis` an exact substring |
+| 11 | Locale switcher in the footer | The switcher is only in the nav today | Same component, pass `locale` + `ui.language.label`; `Footer` already has `site` |
 
 ---
 
@@ -447,6 +543,79 @@ balance again; adding a ninth would repeat the orphan.
 **Verification.** `npx tsc --noEmit` clean · `npm run lint` clean ·
 `npm run build` `Compiled successfully` · smoke test `/` HTTP 200 with
 "Abbas Vaziri" and "Lead Engineer" present in the SSR output.
+
+### 2026-09-13 · Buffy (Codebuff) · session 5 · multilingual: English + Persian + Arabic
+
+**What I was doing.** Make the site multilingual as asked: English stays the
+default and the canonical URL, Persian (`/fa`) and Arabic (`/ar`) join it, and
+**every existing text style and effect survives** in the new languages — nothing
+may look like a degraded version of the design.
+
+**Routing.** English keeps `/`; the proxy rewrites unprefixed paths onto the
+default locale's route (`/en`) and 308s `/en/…` back to the unprefixed URL, so
+there is one crawlable document per language and `/` stays canonical. All three
+locales are still prerendered static — verified in the build output. A new
+`app/[locale]/[...rest]` route catches everything else under a locale, calls
+`notFound()` and so gives 404s a real status code *and* the right copy.
+
+**Content layer.** Every string moved out of `lib/*.ts` into
+`lib/dictionaries/{en,fa,ar}.ts`. `types.ts` derives `Dictionary` from the
+English file with `Widen<T>`, re-applying the literal unions components switch on
+(`Accent`, `ServiceIconName`), so a missing key, a misspelled key or a bad accent
+name is a compile error rather than a silently wrong colour. `lib/content.ts`,
+`projects.ts`, `work.ts`, `people.ts`, `faq.ts` and `contact.ts` are gone.
+Strings that were hardcoded in components (the services heading, the lab badges,
+the FAQ CTA, the form labels, the preloader line, the nav labels) are all in the
+dictionary now. Sections receive the slice they render as a prop, so a page ships
+one language's copy.
+
+**Typography — the part that needed the most care.** Geist has no Arabic-script
+coverage, so the type roles (`--font-body`, `--font-label`, `--font-accent`) are
+resolved per locale from `html[lang]`: Vazirmatn for Persian, Noto Sans Arabic
+for Arabic, Noto Naskh Arabic as the editorial accent face (the Naskh is used
+non-italic — a synthesised oblique looks broken on cursive letterforms — and
+keeps its iridescent gradient). Two Latin-only properties had to stand down for
+`dir="rtl"`: letter-spacing is zeroed (both scripts join cursively) and the
+display leading is raised to `1.3` with more mask padding, or the reveal clips
+descenders. Everything else — sizes, weights, ramps, masks, rotations, timings —
+is shared, and glyph arrows mirror through the new `.arrow-forward` /
+`.flip-rtl` classes so the hover step still travels in the reading direction.
+A `LanguageSwitcher` atom sits in the nav (desktop + mobile menu).
+
+**Verification.** All four steps, plus the locale matrix, plus headless-Chrome
+probes over the DevTools protocol.
+
+- `npx tsc --noEmit` — silent.
+- `npm run lint` — silent.
+- `npm run build` — `Compiled successfully`; `● /en`, `● /fa`, `● /ar` all
+  prerendered, `ƒ /[locale]/[...rest]` dynamic, `proxy` active.
+- Status matrix on `next start`: `/` 200 · `/fa` 200 · `/ar` 200 · `/en` 308 ·
+  `/nope` 404 · `/fa/nope` 404 · `/ar/nope` 404 · `/sitemap.xml` 200 ·
+  `/robots.txt` 200 · `/icon.svg` 200.
+- HTML: `<html lang="fa" dir="rtl">`, Persian hero and nav copy present, Persian
+  404 copy and title shipped, hreflang alternates (`en`, `fa-IR`, `ar`,
+  `x-default`) in the head and in the sitemap as absolute URLs.
+- Browser: `dir`, `lang`, body font family and loaded `document.fonts` correct per
+  locale; **zero** horizontal overflow at 390 / 768 / 1440 px in all three
+  locales; no console errors or exceptions on any route; clicking EN → FA → AR →
+  EN in the switcher updates `<html lang/dir>`, the font and the copy each time.
+- Glyph-ink measurement inside every masked headline: clearance of 10–52 px, i.e.
+  nothing is clipped in any script, and all 18 `serif-accent` runs render in all
+  three locales (proof the `emphasis` substrings all match).
+
+**Judgement calls worth knowing.** (1) Tracking and leading are zeroed/loosened
+for RTL only — see §8.11. (2) The three RTL families are instantiated with
+`preload: false` so the English critical path is byte-for-byte what it was; the
+swap hides behind the intro curtain — see §8.12. (3) The 404 boundary renders
+inside `[locale]/[...rest]` rather than `[locale]/`, because a `headers()` call in
+a segment-wide boundary is enough to make the static pages dynamic — that cost me
+one build to learn, and moving the boundary down a level restored `● /en`, `/fa`,
+`/ar`.
+
+**Next agent.** The copy in `fa.ts` and `ar.ts` is machine-drafted: idiomatic and
+layout-true, but unproof-read, so §10.10 is the honest next step (`site.email`,
+the dummy socials and the illustrative case studies still need the human too).
+Everything else in the backlog is optional polish. The repository is green.
 
 
 

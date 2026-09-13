@@ -5,8 +5,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import Magnetic from "@/components/Magnetic";
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
-import { contact } from "@/lib/contact";
-import { site } from "@/lib/content";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
 type FormState = {
   name: string;
@@ -17,22 +16,30 @@ type FormState = {
   message: string;
 };
 
-const initialForm: FormState = {
-  name: "",
-  email: "",
-  company: "",
-  budget: contact.budgetOptions[1],
-  projectType: contact.projectTypes[0],
-  message: "",
+type ContactProps = {
+  contact: Dictionary["contact"];
+  site: Dictionary["site"];
 };
+
+/** The form opens on the middle budget band and the first project type. */
+function makeInitialForm(contact: Dictionary["contact"]): FormState {
+  return {
+    name: "",
+    email: "",
+    company: "",
+    budget: contact.budgetOptions[1],
+    projectType: contact.projectTypes[0],
+    message: "",
+  };
+}
 
 const fieldClass =
   "w-full rounded-xl border border-hairline bg-ink-raised/60 px-4 py-3 text-sm text-bone transition-colors duration-300 placeholder:text-muted/50 focus:border-lime/50 focus:bg-ink-raised focus:outline-none";
 
 const labelClass = "font-mono text-[0.6rem] tracking-[0.18em] text-muted uppercase";
 
-export default function Contact() {
-  const [form, setForm] = useState<FormState>(initialForm);
+export default function Contact({ contact, site }: ContactProps) {
+  const [form, setForm] = useState<FormState>(() => makeInitialForm(contact));
   const [sent, setSent] = useState(false);
 
   const update =
@@ -49,13 +56,14 @@ export default function Contact() {
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const subject = `New project brief — ${form.projectType} · ${form.budget}`;
+    const { mail } = contact;
+    const subject = `${mail.subject} — ${form.projectType} · ${form.budget}`;
     const body = [
-      `Name: ${form.name}`,
-      `Email: ${form.email}`,
-      `Company: ${form.company || "—"}`,
-      `Budget: ${form.budget}`,
-      `Project type: ${form.projectType}`,
+      `${mail.name}: ${form.name}`,
+      `${mail.email}: ${form.email}`,
+      `${mail.company}: ${form.company || "—"}`,
+      `${mail.budget}: ${form.budget}`,
+      `${mail.projectType}: ${form.projectType}`,
       "",
       form.message,
     ].join("\n");
@@ -121,12 +129,10 @@ export default function Contact() {
                       ✓
                     </span>
                     <h3 className="display-type text-2xl text-bone">
-                      Your brief is on its way.
+                      {contact.sent.title}
                     </h3>
                     <p className="max-w-sm text-sm leading-relaxed text-muted">
-                      We opened your email client with the details filled in —
-                      press send and it lands with us. If nothing opened, write
-                      to{" "}
+                      {contact.sent.body}{" "}
                       <a
                         href={`mailto:${site.email}`}
                         className="text-lime underline underline-offset-4"
@@ -138,32 +144,35 @@ export default function Contact() {
                     <button
                       type="button"
                       onClick={() => {
-                        setForm(initialForm);
+                        setForm(makeInitialForm(contact));
                         setSent(false);
                       }}
                       className="mt-2 font-mono text-[0.62rem] tracking-[0.18em] text-bone/70 uppercase transition-colors duration-300 hover:text-lime"
                     >
-                      ← Write another
+                      <span className="flip-rtl" aria-hidden="true">
+                        ←
+                      </span>{" "}
+                      {contact.sent.again}
                     </button>
                   </div>
                 ) : (
                   <form onSubmit={onSubmit} className="flex flex-col gap-5">
                     <div className="grid gap-5 sm:grid-cols-2">
                       <label className="flex flex-col gap-2">
-                        <span className={labelClass}>Name *</span>
+                        <span className={labelClass}>{contact.form.name}</span>
                         <input
                           required
                           name="name"
                           autoComplete="name"
                           value={form.name}
                           onChange={update("name")}
-                          placeholder="Ada Lovelace"
+                          placeholder={contact.form.namePlaceholder}
                           className={fieldClass}
                         />
                       </label>
 
                       <label className="flex flex-col gap-2">
-                        <span className={labelClass}>Email *</span>
+                        <span className={labelClass}>{contact.form.email}</span>
                         <input
                           required
                           type="email"
@@ -171,27 +180,29 @@ export default function Contact() {
                           autoComplete="email"
                           value={form.email}
                           onChange={update("email")}
-                          placeholder="you@company.com"
+                          placeholder={contact.form.emailPlaceholder}
                           className={fieldClass}
                         />
                       </label>
                     </div>
 
                     <label className="flex flex-col gap-2">
-                      <span className={labelClass}>Company</span>
+                      <span className={labelClass}>{contact.form.company}</span>
                       <input
                         name="company"
                         autoComplete="organization"
                         value={form.company}
                         onChange={update("company")}
-                        placeholder="Optional"
+                        placeholder={contact.form.companyPlaceholder}
                         className={fieldClass}
                       />
                     </label>
 
                     <div className="grid gap-5 sm:grid-cols-2">
                       <label className="flex flex-col gap-2">
-                        <span className={labelClass}>Project type</span>
+                        <span className={labelClass}>
+                          {contact.form.projectType}
+                        </span>
                         <select
                           name="projectType"
                           value={form.projectType}
@@ -207,7 +218,7 @@ export default function Contact() {
                       </label>
 
                       <label className="flex flex-col gap-2">
-                        <span className={labelClass}>Budget</span>
+                        <span className={labelClass}>{contact.form.budget}</span>
                         <select
                           name="budget"
                           value={form.budget}
@@ -224,14 +235,14 @@ export default function Contact() {
                     </div>
 
                     <label className="flex flex-col gap-2">
-                      <span className={labelClass}>The brief *</span>
+                      <span className={labelClass}>{contact.form.brief}</span>
                       <textarea
                         required
                         name="message"
                         rows={5}
                         value={form.message}
                         onChange={update("message")}
-                        placeholder="What are you building, what is getting in the way, and when does it need to be live?"
+                        placeholder={contact.form.briefPlaceholder}
                         className={`${fieldClass} resize-none`}
                       />
                     </label>
@@ -253,7 +264,7 @@ export default function Contact() {
                       </Magnetic>
 
                       <span className="font-mono text-[0.58rem] tracking-[0.14em] text-muted/70 uppercase">
-                        No newsletters. No CRM. Just an engineer replying.
+                        {contact.form.disclaimer}
                       </span>
                     </div>
                   </form>

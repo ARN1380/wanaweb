@@ -4,21 +4,20 @@ import { motion, useScroll, useTransform, type MotionValue } from "motion/react"
 import { useRef } from "react";
 
 import { FadeUp, Kicker, MaskedLines } from "@/components/Reveal";
-import {
-  projects,
-  work,
-  type Project,
-  type ProjectAccent,
-} from "@/lib/projects";
+import type { Accent, Dictionary, Project } from "@/lib/dictionaries/types";
 import { cn, prefersReducedMotion } from "@/lib/util";
 
-const accentWash: Record<ProjectAccent, string> = {
+type WorkProps = {
+  projects: Dictionary["projects"];
+};
+
+const accentWash: Record<Accent, string> = {
   violet: "from-violet/30 via-cyan/10 to-transparent",
   cyan: "from-cyan/30 via-lime/10 to-transparent",
   lime: "from-lime/25 via-violet/10 to-transparent",
 };
 
-const accentDot: Record<ProjectAccent, string> = {
+const accentDot: Record<Accent, string> = {
   violet: "bg-violet",
   cyan: "bg-cyan",
   lime: "bg-lime",
@@ -26,6 +25,7 @@ const accentDot: Record<ProjectAccent, string> = {
 
 type ProjectCardProps = {
   project: Project;
+  cta: string;
   index: number;
   total: number;
   progress: MotionValue<number>;
@@ -36,7 +36,13 @@ type ProjectCardProps = {
  * top offset, so each slides over the last as the page scrolls — the outgoing
  * card scales back to create depth.
  */
-function ProjectCard({ project, index, total, progress }: ProjectCardProps) {
+function ProjectCard({
+  project,
+  cta,
+  index,
+  total,
+  progress,
+}: ProjectCardProps) {
   const start = index / total;
   const end = (index + 1) / total;
 
@@ -114,11 +120,8 @@ function ProjectCard({ project, index, total, progress }: ProjectCardProps) {
               href="#contact"
               className="group mt-1 inline-flex w-fit items-center gap-2 font-mono text-[0.66rem] tracking-[0.18em] text-lime uppercase"
             >
-              {work.cta}
-              <span
-                aria-hidden="true"
-                className="transition-transform duration-500 ease-expo group-hover:translate-x-1"
-              >
+              {cta}
+              <span aria-hidden="true" className="arrow-forward">
                 →
               </span>
             </a>
@@ -168,7 +171,7 @@ function ProjectCard({ project, index, total, progress }: ProjectCardProps) {
   );
 }
 
-export default function Work() {
+export default function Work({ projects }: WorkProps) {
   const stackRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -185,16 +188,16 @@ export default function Work() {
       <div className="mx-auto max-w-7xl px-[var(--shell)]">
         <header className="flex flex-col gap-6">
           <FadeUp>
-            <Kicker>{work.label}</Kicker>
+            <Kicker>{projects.label}</Kicker>
           </FadeUp>
 
           <h2 className="display-type max-w-3xl text-[clamp(2.1rem,6.2vw,4.6rem)]">
-            <MaskedLines lines={[work.title]} emphasis={work.emphasis} />
+            <MaskedLines lines={[projects.title]} emphasis={projects.emphasis} />
           </h2>
 
           <FadeUp delay={120}>
             <p className="max-w-2xl text-base leading-relaxed text-muted sm:text-lg">
-              {work.body}
+              {projects.body}
             </p>
           </FadeUp>
         </header>
@@ -205,12 +208,13 @@ export default function Work() {
         into the containing block for `position: sticky` and breaks the stack.
       */}
       <div ref={stackRef} className="mx-auto mt-16 max-w-7xl px-[var(--shell)]">
-        {projects.map((project, index) => (
+        {projects.items.map((project, index) => (
           <ProjectCard
             key={project.id}
             project={project}
+            cta={projects.cta}
             index={index}
-            total={projects.length}
+            total={projects.items.length}
             progress={scrollYProgress}
           />
         ))}

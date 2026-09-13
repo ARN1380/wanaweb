@@ -4,8 +4,12 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 
 import Logo from "@/components/Logo";
-import { site } from "@/lib/content";
 import { prefersReducedMotion, setSmoothScrollStopped } from "@/lib/util";
+
+type PreloaderProps = {
+  tagline: string;
+  compiling: string;
+};
 
 const SESSION_KEY = "wanaweb:intro-played";
 const DURATION = 900;
@@ -16,7 +20,7 @@ const FAILSAFE = 2600;
  * Decorative intro curtain. Plays at most once per browser session, never for
  * reduced-motion users, and always releases the scroll lock.
  */
-export default function Preloader() {
+export default function Preloader({ tagline, compiling }: PreloaderProps) {
   const [visible, setVisible] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -87,7 +91,7 @@ export default function Preloader() {
           <div className="flex items-start justify-between gap-6">
             <Logo />
             <span className="hidden font-mono text-[0.6rem] tracking-[0.18em] text-muted uppercase sm:block">
-              {site.tagline}
+              {tagline}
             </span>
           </div>
 
@@ -108,7 +112,7 @@ export default function Preloader() {
               />
             </span>
             <span className="font-mono text-[0.6rem] tracking-[0.18em] text-muted uppercase">
-              Compiling shaders · preparing the scene
+              {compiling}
             </span>
           </div>
         </motion.div>

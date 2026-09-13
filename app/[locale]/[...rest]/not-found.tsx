@@ -1,16 +1,25 @@
-import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 
 import Logo from "@/components/Logo";
-import { nav, site } from "@/lib/content";
+import { getDictionary } from "@/lib/dictionaries";
+import { LOCALE_HEADER, parseLocale, publicHref } from "@/lib/i18n";
 
-export const metadata: Metadata = {
-  title: "Page not found",
-  description:
-    "That page does not exist — head back to the studio and find what you were looking for.",
-};
+/**
+ * The 404 boundary.
+ *
+ * It renders inside `[locale]/layout.tsx`, which has already set `<html lang>`
+ * and `dir` — but a boundary cannot read route params, so the locale arrives on
+ * the request in the header the proxy writes. Without that header (a path that
+ * never reached the proxy, or Next's own `/_not-found` prerender) it falls back
+ * to the default locale instead of rendering nothing.
+ */
+export default async function NotFound() {
+  const locale = parseLocale((await headers()).get(LOCALE_HEADER) ?? undefined);
+  const { nav, site, ui } = getDictionary(locale);
+  const copy = ui.notFound;
+  const home = publicHref(locale);
 
-export default function NotFound() {
   return (
     <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-[var(--shell)] py-24 text-center">
       <div
@@ -22,43 +31,41 @@ export default function NotFound() {
         <Logo />
 
         <p className="font-mono text-[0.62rem] tracking-[0.22em] text-lime uppercase">
-          Error 404
+          {copy.kicker}
         </p>
 
         <h1 className="display-type text-[clamp(4rem,20vw,12rem)] leading-[0.85]">
-          <span className="iridescent-text">Lost</span>
+          <span className="iridescent-text">{copy.headline}</span>
           <span className="text-bone/25">.</span>
         </h1>
 
         <p className="max-w-md text-base leading-relaxed text-muted">
-          This page does not exist — or it moved while we were
-          rewriting the render path. Everything worth seeing is on the studio
-          site.
+          {copy.body}
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
           <Link
-            href="/#top"
+            href={`${home}#top`}
             className="inline-flex items-center gap-2.5 rounded-full bg-lime px-6 py-3.5 font-mono text-[0.72rem] tracking-[0.18em] text-ink uppercase transition-colors duration-300 hover:bg-bone"
           >
-            Back to the studio
+            {copy.home}
           </Link>
           <Link
-            href="/#contact"
+            href={`${home}#contact`}
             className="inline-flex items-center gap-2.5 rounded-full border border-hairline px-6 py-3.5 font-mono text-[0.72rem] tracking-[0.18em] text-bone uppercase transition-colors duration-300 hover:border-lime/60 hover:text-lime"
           >
-            Start a project
+            {ui.startProject}
           </Link>
         </div>
 
         <nav
-          aria-label="Site sections"
+          aria-label={ui.navSections}
           className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
         >
           {nav.map((item) => (
             <Link
               key={item.href}
-              href={`/${item.href}`}
+              href={`${home}${item.href}`}
               className="font-mono text-[0.6rem] tracking-[0.16em] text-muted uppercase transition-colors duration-300 hover:text-lime"
             >
               {item.label}

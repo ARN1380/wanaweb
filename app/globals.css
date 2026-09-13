@@ -27,6 +27,34 @@
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);
+
+  /*
+    Type roles. Every type style on the site resolves through these three
+    variables, so a locale only has to swap the families once — the components
+    never learn which script they are rendering.
+  */
+  --font-body: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-label: var(--font-geist-mono), ui-monospace, monospace;
+  --font-accent: var(--font-instrument), Georgia, serif;
+}
+
+/*
+  Persian and Arabic get their own families: Geist has no Arabic-script
+  coverage, so without this the whole page would fall back to a system font.
+  Farsi uses Vazirmatn; Arabic uses Noto Sans Arabic. Both locales take the Naskh
+  serif as the editorial accent face (the Latin ramp's Instrument Serif italic
+  has no Arabic glyphs).
+*/
+html[lang="fa"] {
+  --font-body: var(--font-vazirmatn), Tahoma, sans-serif;
+  --font-label: var(--font-vazirmatn), Tahoma, sans-serif;
+  --font-accent: var(--font-arabic-serif), var(--font-vazirmatn), serif;
+}
+
+html[lang="ar"] {
+  --font-body: var(--font-arabic-sans), Tahoma, sans-serif;
+  --font-label: var(--font-arabic-sans), Tahoma, sans-serif;
+  --font-accent: var(--font-arabic-serif), var(--font-arabic-sans), serif;
 }
 
 @theme inline {
@@ -41,9 +69,9 @@
   --color-ember: var(--ember);
   --color-accent: var(--accent);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument), Georgia, serif;
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-label);
+  --font-display: var(--font-accent);
 
   --ease-expo: var(--ease-out-expo);
 }
@@ -82,7 +110,7 @@ html.lenis {
 body {
   background-color: var(--ink);
   color: var(--bone);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
   overflow-x: clip;
   font-synthesis-weight: none;
   text-rendering: optimizeLegibility;
@@ -110,7 +138,7 @@ body {
 /* ------------------------------------------------------------ typography -- */
 
 @utility kicker {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-label);
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.22em;
@@ -119,7 +147,7 @@ body {
 }
 
 @utility display-type {
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 0.92;
@@ -135,7 +163,8 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  padding-right: 0.06em;
+  /* Room for the italic's overhang, on whichever side the text ends. */
+  padding-inline-end: 0.06em;
 }
 
 @utility iridescent-text {
@@ -404,6 +433,79 @@ body {
   to {
     transform: scaleX(1);
   }
+}
+
+/* ------------------------------------------------------------------ RTL ---- */
+
+/*
+  Arabic-script typography. Two Latin-ramp habits have to stand down for
+  Persian and Arabic, because they are properties of *Latin* type rather than
+  of the design:
+
+  - Tracking. Both scripts join cursively: positive tracking pulls joined
+    letters apart, and the display ramp's negative tracking collides them.
+  - Leading. The display ramp is set at 0.92, which flatters Latin capitals but
+    clips Arabic ascenders and descenders against the reveal's line mask.
+
+  Everything else — sizes, weights, the iridescent ramps, the masks, the
+  rotations, every timing — is untouched, so the new locales inherit the same
+  visual system as the Latin one.
+*/
+html[dir="rtl"] .display-type,
+html[dir="rtl"] .kicker,
+html[dir="rtl"] [class*="tracking-"] {
+  letter-spacing: 0;
+}
+
+html[dir="rtl"] .display-type {
+  line-height: 1.3;
+}
+
+/* Deep descenders need breathing room inside the masked line reveal. */
+html[dir="rtl"] .reveal-mask {
+  padding-bottom: 0.3em;
+}
+
+html[dir="rtl"] .serif-accent {
+  /*
+    Arabic-script faces have no true italic, and a synthesised oblique reads as
+    broken on cursive letterforms — so the accent keeps its gradient, size and
+    weight and gives up only the slant.
+  */
+  font-style: normal;
+  padding-inline-end: 0;
+}
+
+/*
+  Forward arrows. The glyph mirrors in RTL and the hover step follows the
+  reading direction, so one piece of markup reads correctly in both. The
+  duration is a variable because links nudge faster than buttons do.
+*/
+.arrow-forward {
+  display: inline-block;
+  transition: transform var(--arrow-duration, 0.5s) var(--ease-out-expo);
+}
+
+.group:hover .arrow-forward,
+a:hover .arrow-forward,
+button:hover .arrow-forward {
+  transform: translateX(0.25rem);
+}
+
+/* Mirror-only variant, for arrows whose motion lives in a Tailwind parent. */
+.flip-rtl {
+  display: inline-block;
+}
+
+html[dir="rtl"] .arrow-forward,
+html[dir="rtl"] .flip-rtl {
+  transform: scaleX(-1);
+}
+
+html[dir="rtl"] .group:hover .arrow-forward,
+html[dir="rtl"] a:hover .arrow-forward,
+html[dir="rtl"] button:hover .arrow-forward {
+  transform: translateX(-0.25rem) scaleX(-1);
 }
 
 /* ------------------------------------------------- reduced motion / a11y -- */

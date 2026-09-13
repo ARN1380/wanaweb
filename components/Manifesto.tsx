@@ -1,9 +1,14 @@
 import Counter from "@/components/Counter";
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
-import { manifesto, stats } from "@/lib/content";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
-export default function Manifesto() {
+type ManifestoProps = {
+  manifesto: Dictionary["manifesto"];
+  stats: Dictionary["stats"];
+};
+
+export default function Manifesto({ manifesto, stats }: ManifestoProps) {
   return (
     <section id="studio" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-[var(--shell)]">

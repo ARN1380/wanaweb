@@ -1,22 +1,26 @@
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
 import ServiceIcon from "@/components/ServiceIcon";
-import { services } from "@/lib/work";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
-export default function Services() {
+type ServicesProps = {
+  services: Dictionary["services"];
+};
+
+export default function Services({ services }: ServicesProps) {
   return (
     <section id="services" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-[var(--shell)]">
         <SectionHeading
           index={2}
-          label="Services"
-          lines={["What we do, and do properly."]}
-          emphasis="properly"
-          body="Six disciplines, one team, no handoffs. Every engagement is scoped so we can own the outcome from first sketch to production monitoring."
+          label={services.label}
+          lines={[services.title]}
+          emphasis={services.emphasis}
+          body={services.body}
         />
 
         <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((service, index) => (
+          {services.items.map((service, index) => (
             <FadeUp key={service.id} delay={(index % 3) * 90}>
               <article className="group relative h-full overflow-hidden rounded-2xl">
                 <div

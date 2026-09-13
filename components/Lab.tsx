@@ -6,14 +6,19 @@ import { useRef } from "react";
 
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
-import { lab } from "@/lib/work";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
 const LabScene = dynamic(() => import("@/components/three/LabScene"), {
   ssr: false,
   loading: () => <div className="canvas-fallback absolute inset-0" />,
 });
 
-export default function Lab() {
+type LabProps = {
+  lab: Dictionary["lab"];
+  stage: Dictionary["ui"]["labStage"];
+};
+
+export default function Lab({ lab, stage }: LabProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const inView = useInView(stageRef, { amount: 0.05 });
 
@@ -49,7 +54,7 @@ export default function Lab() {
 
           <div className="pointer-events-none absolute top-5 right-5 hidden sm:top-7 sm:right-7 sm:block">
             <span className="font-mono text-[0.6rem] tracking-[0.18em] text-muted uppercase">
-              WebGL / live
+              {stage.live}
             </span>
           </div>
 
@@ -67,7 +72,7 @@ export default function Lab() {
             aria-hidden="true"
             className="pointer-events-none absolute right-5 bottom-5 hidden font-mono text-[0.6rem] tracking-[0.18em] text-muted uppercase sm:right-7 sm:bottom-7 sm:block"
           >
-            0 assets · 1 draw call / 28 cubes
+            {stage.geometry}
           </div>
         </div>
       </FadeUp>

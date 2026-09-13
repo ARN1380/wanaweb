@@ -1,8 +1,12 @@
 import { FadeUp } from "@/components/Reveal";
 import SectionHeading from "@/components/SectionHeading";
-import { testimonials } from "@/lib/people";
+import type { Dictionary } from "@/lib/dictionaries/types";
 
-export default function Testimonials() {
+type TestimonialsProps = {
+  testimonials: Dictionary["testimonials"];
+};
+
+export default function Testimonials({ testimonials }: TestimonialsProps) {
   return (
     <section id="signal" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-[var(--shell)]">
@@ -10,7 +14,7 @@ export default function Testimonials() {
           index={7}
           label={testimonials.label}
           lines={[testimonials.title]}
-          emphasis="partners"
+          emphasis={testimonials.emphasis}
         />
 
         <div className="mt-16 grid gap-5 lg:grid-cols-3">
