@@ -73,7 +73,7 @@ system, and a contact form that hands off to email.
 | Testimonials | ✅ Done | Three quotes, anonymised attribution |
 | Contact form | ✅ Done | Client validation + `mailto:` handoff (no backend) |
 | **Selected Work** | ✅ Done | Four case studies, sticky-stacked cards |
-| **Site gallery (3D wall)** | ✅ Done | Scroll-scrubbed wall of the four sites; previews drawn in the browser — see §8.15 |
+| **Site gallery (WebGL room)** | ✅ Done | Real 3D room of the four sites, camera dollied by scroll; screens are runtime canvas textures — see §8.15–8.17 |
 | **FAQ** | ✅ Done | Accessible accordion |
 | **Intro preloader** | ✅ Done | Once per session, respects reduced motion |
 | **Multilingual routing** | ✅ Done | `/` = English, `/fa`, `/ar`; all three prerendered |
@@ -112,7 +112,10 @@ wanaweb/
 │  │  ├─ shaders.ts      ← ALL GLSL lives here (incl. Ashima simplex noise, MIT)
 │  │  ├─ HeroScene.tsx   ← hero canvas: Core + ParticleField
 │  │  ├─ LabScene.tsx    ← lab canvas: composition, lights, OrbitControls
-│  │  └─ LabObjects.tsx  ← knot / glass orbs / instanced cube ring
+│  │  ├─ LabObjects.tsx  ← knot / glass orbs / instanced cube ring
+│  │  ├─ GalleryScene.tsx ← gallery canvas: room, camera rig, viewport guard
+│  │  ├─ GalleryObjects.tsx ← textured site panels + reflective hall floor
+│  │  └─ siteTexture.ts  ← draws a project's site into a canvas texture
 │  ├─ sections           ← Hero, Manifesto, Work, Showcase (the gallery),
 │  │                       SiteFrame (a site mockup), Services, Lab, Process,
 │  │                       Stack, Team, Testimonials, Faq, Contact│  └─ atoms             ← Nav, Footer, Logo, LanguageSwitcher, Reveal,
@@ -438,12 +441,26 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
     the motion hook and gone with the store hook. It only bites when the
     *structure* changes — `Work.tsx` uses the plain `prefersReducedMotion()` util
     for a style-only difference, which React patches silently (§10.12).
-16. **The gallery's previews are not screenshots.** `components/SiteFrame.tsx`
-    draws each client's site in real DOM — its own copy, container-unit type and
-    its accent — so the gallery adds no assets and no network requests, and it
-    stays localised and readable by a screen reader in all three languages. If
-    real photography ever lands (§10.1), it belongs *inside* the frame's viewport
-    area, behind the chrome and the caption strip.
+16. **The gallery's screens are not screenshots.** `components/three/siteTexture.ts`
+    paints each client's site into a canvas — bezel, chrome, domain, headline,
+    metrics, RTL-aware — and that canvas is the texture on the 3D panel, so the
+    gallery adds no assets and no network requests. The same mockup exists as real
+    DOM in `components/SiteFrame.tsx`, which is what the reduced-motion grid
+    renders: crisp text, real copy, screen-readable. The two are deliberate twins,
+    so **change both** when the mockup's design changes. If real photography ever
+    lands (§10.1), it belongs inside the screen's viewport area, behind the chrome
+    and the caption strip, in both twins.
+17. **R3F's container measurement latches, and the gallery guards against it.**
+    Measured on this site: in the Persian page the gallery canvas was sized
+    **1425×1001 inside a 1425×900 box** — and at that moment so were the hero's
+    and the lab's canvases. A drawing buffer that disagrees with its box renders
+    the scene at the wrong aspect (vertically stretched), in one locale only, with
+    no console error. Neither gating the canvas on `document.fonts.ready` nor
+    comparing R3F's `size` against the host fixed it: the store reported the
+    correct height while the canvas kept the wrong one. `ViewportGuard` in
+    `GalleryScene.tsx` therefore compares the **buffer itself** — ground truth —
+    against the host box each frame and corrects `gl` and the store; it settles in
+    a frame or two. The hero and lab canvases carry the same latent bug (§10.15).
 
 ### Placeholders the human must supply
 
@@ -492,6 +509,8 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
 | 12 | Move `Work.tsx` onto `usePrefersReducedMotion` | It is the last place that resolves a media query during the first client render | Style-only today, so React patches it silently — but it is the same trap as §8.15, one branch away from becoming a real error |
 | 13 | Let the gallery frames open the case studies | A frame is currently only a picture; the caption CTA goes to `#contact` | Needs §10.2 first: wrap `SiteFrame` in a link to `/work/[slug]` and let the front frame own the clickable layer, not all four |
 | 14 | A nav entry for the gallery | It is reachable only by scrolling past Work and from the footer's Explore column | At 1024 px the desktop nav has **101 px** of slack and a seventh item needs ~93 px. Re-measure before adding one, and never at 1440 only — the binding width is exactly 1024 |
+| 15 | Guard the hero and lab canvases the same way | §8.17 is a framework-level latch, not a gallery bug — those two canvases are unguarded | Reuse `ViewportGuard`; it is a few lines and needs its own canvas's `gl` and `setSize`. Verify by comparing `canvas.height` with the host's `clientHeight` in each locale |
+| 16 | Real textures for the gallery screens | §8.16's screens are drawn; a studio with real work wants photographs | Same seam as §10.1: an `ImageBitmap` from `public/` swapped for the generated canvas, keeping `siteTexture.ts`'s geometry |
 
 ---
 
@@ -888,6 +907,72 @@ alongside it, or deepen the existing one.
 **Next agent.** The masks are correct for these faces *at these sizes*. Change
 the face, the size or the padding, and re-run the ink measurement — §8.14 has the
 method and the trap.
+
+### 2026-09-13 · Buffy (session 8) · the gallery becomes a real WebGL room
+
+**What I was doing.** The human asked for "a 3D gallery for website showcases
+too". Session 6's gallery already showcased the sites, but it was **CSS 3D** —
+transformed DOM. Asked which they meant, they chose **rebuild it as real WebGL**:
+a lit 3D room where the site panels are actual textured meshes and the camera
+moves through them.
+
+**What I did.** The section kept its contract — same copy, same caption strip,
+same dots, same scroll markers, same reduced-motion grid — and swapped the
+renderer underneath it.
+
+- `components/three/siteTexture.ts` — paints a project's site into a canvas:
+  device bezel, browser chrome with a generated domain, the headline, two metrics
+  in the iridescent ramp, a stack pill, a ghost index. RTL-aware (`ctx.direction`
+  and aligned edges; domains and numerals stay Latin, as the i18n rules require).
+- `components/three/GalleryObjects.tsx` — the panel mesh (the texture doubles as
+  its emissive map, which is what makes a screen read as *lit*), plus a
+  `MeshReflectorMaterial` floor and an accent key light that travels with the
+  camera.
+- `components/three/GalleryScene.tsx` — the room: opaque background (§8.2),
+  procedural environment (§8.4), bloom above the screens' mid-tones so the
+  artwork stays legible, and a camera rig that reads scroll progress and pointer
+  parallax from motion values **inside the frame loop**, so scrubbing never
+  re-renders React. Textures are built only after `document.fonts.ready` —
+  drawing earlier would bake the fallback face into the screens for the session.
+- `components/Showcase.tsx` — the CSS wall, `--gallery-sign` and `.gallery-floor`
+  are gone; the canvas is dynamically imported with `ssr: false` and a
+  `.canvas-fallback` placeholder, per the conventions.
+
+**The bug this surfaced.** In Persian the canvas rendered at the wrong aspect:
+**1425×1001 buffer inside a 1425×900 box**, which stretches the room vertically.
+Found by screenshotting the page and reading the pixels, then bisected at runtime:
+forcing the canvas height by hand stuck, and **all three** R3F canvases (gallery,
+hero, lab) carried the same stale 1001.12px — so it is a framework-level latch,
+not something the gallery caused, and the pre-existing canvases still have it
+(§10.15). Neither gating the canvas on `document.fonts.ready` nor comparing R3F's
+`size` against the host fixed it, because the store reported the right height
+while the canvas kept the wrong one. `ViewportGuard` now compares the buffer
+to the host box each frame and corrects both — recorded as §8.17.
+
+**Verification.** All four steps plus the browser probes.
+
+- `npx tsc --noEmit` silent · `npm run lint` silent · `npm run build`
+  `Compiled successfully` with `● /en`, `● /fa`, `● /ar` prerendered.
+- Status matrix: `/`, `/fa`, `/ar` 200 · `/en` 308 · `/nope`, `/fa/nope` 404.
+- SSR: `id="gallery"`, the hint copy, the four markers and the
+  `canvas-fallback` placeholder are all in the served HTML, in every locale; the
+  old `gallery-floor` / `gallery-sign` rules are gone from the CSS bundle.
+- Headless Chrome at **1440×900, 768×1024, 390×844 × en/fa**: WebGL 2.0 context,
+  drawing buffer equal to the stage at every size (the aspect check that caught
+  the Persian bug), **0 px** horizontal overflow, **0 console errors**, and
+  **36–50 %** of the pixels changing between two scroll positions — which is the
+  proof that the camera really walks the room, since I cannot see the screen.
+- `prefers-reduced-motion: reduce`: no canvas, no sticky track, the static grid of
+  four `SiteFrame` previews, no overflow.
+
+**What I could not verify.** I have no eyes on the render: the checks above prove
+it *renders*, changes with scroll, is correctly proportioned and logs nothing, not
+that the composition is beautiful. Panel size, spacing, camera height and exposure
+are the dials to turn if the human wants a different feel — the numbers are named
+constants at the top of `GalleryObjects.tsx` and in `CameraRig`.
+
+**Next agent.** §10.15 is the honest follow-up (the other two canvases still carry
+the latch). Everything else here is taste.
 
 
 

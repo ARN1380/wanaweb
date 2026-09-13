@@ -61,7 +61,7 @@ The site is a single page, prerendered once per language:
 | Hero | `components/Hero.tsx` | Masked line reveal over a live WebGL scene |
 | Studio | `components/Manifesto.tsx` | Position, animated counters, three pillars |
 | Selected work | `components/Work.tsx` | Four case studies in sticky-stacked cards |
-| The gallery | `components/Showcase.tsx` | Scroll-scrubbed 3D wall of the four sites |
+| The gallery | `components/Showcase.tsx` | WebGL room of the four sites, walked by scroll |
 | Services | `components/Services.tsx` | Six capability cards |
 | 3D Lab | `components/Lab.tsx` | Interactive, draggable 3D scene |
 | Process | `components/Process.tsx` | Four phases with sticky scroll tracking |
@@ -77,8 +77,9 @@ a localised 404 (`app/[locale]/[...rest]/not-found.tsx`), and generated
 
 ## The 3D work
 
-Two independent WebGL scenes, both generated entirely in the browser. There are
-**no model files and no downloaded textures** anywhere in this repository.
+Three independent WebGL scenes, all generated entirely in the browser. There are
+**no model files and no downloaded textures** anywhere in this repository — the
+gallery's screens included, which are painted into canvas textures at runtime.
 
 - **`components/three/HeroScene.tsx`** — an icosahedron displaced on the GPU by
   two octaves of 3D simplex noise (`components/three/shaders.ts`), shaded with an
@@ -87,24 +88,32 @@ Two independent WebGL scenes, both generated entirely in the browser. There are
 - **`components/three/LabScene.tsx`** — a chrome torus knot, four refracting glass
   orbs and a 28-cube instanced halo, lit by a *procedurally rendered* environment
   built from `Lightformer`s. Drag to orbit; it auto-rotates otherwise.
+- **`components/three/GalleryScene.tsx`** — the gallery: four textured screens in a
+  dark hall with a mirror floor, a key light that travels with the camera, and a
+  camera dollied by the page's scroll.
 
 ## The gallery
 
-`components/Showcase.tsx` + `components/SiteFrame.tsx` — a 3D wall of the four
-case studies, turned by the page's own scroll.
+`components/Showcase.tsx` — a real WebGL room with the four case studies hanging in
+it as lit screens, which the page's own scroll walks you past.
 
-- One tall track (`100svh + 62vh per slot`) holds a sticky viewport. Scroll
-  progress fans out into a single transform per frame — sideways, back, and
-  turned in — so nothing re-renders while the wall travels.
-- `components/SiteFrame.tsx` is the preview: a browser window whose contents are
-  **drawn in the browser** from the project's own copy and accent, down to the
-  domain in the address bar. Consistent with the rest of the repository, there is
-  no screenshot involved. Its type is sized in container units (`cqw`), so the
-  same markup reads correctly as a phone-sized frame and as a 40 rem one.
-- **RTL** is handled by one custom property: `--gallery-sign` is `1` in LTR and
-  `-1` under `html[dir="rtl"]`, and the wall multiplies its horizontal offset and
-  Y-rotation by it, so the gallery travels the other way without the component
-  branching on direction.
+- `components/three/GalleryScene.tsx` is the room: a canvas inside a sticky
+  viewport, an opaque background (bloom adds light to transparent pixels and the
+  browser throws it away — see §8.2), a procedurally lit environment, a genuinely
+  reflecting floor, and a camera that reads scroll progress from a motion value
+  **inside the frame loop**, so scrubbing the gallery never re-renders React.
+- One tall track (`100svh + 62vh per site`) maps scroll distance onto the camera's
+  travel. The caption strip, the dots and the scroll markers work exactly as they
+  did before the renderer changed.
+- Two renderers, one design: `components/three/siteTexture.ts` draws each site
+  into a canvas texture for the 3D screens — bezel, browser chrome, domain,
+  headline, metrics, and RTL-aware text — while `components/SiteFrame.tsx` is the
+  same mockup as real DOM, which is what the reduced-motion grid shows. The
+  repository still ships **no screenshots**: both are generated in the browser
+  from the project's own copy and accent.
+- **RTL**: the room reads `document.documentElement.dir` when it builds its
+  textures, so the Persian and Arabic walls are laid out right-to-left — first
+  site on the right — and the camera travels that way with them.
 - Accessibility: scrolling is the interaction, so the caption strip duplicates
   the state (index, client, sector) and the dots are anchors onto scroll markers
   (`#gallery-1`…`#gallery-4`) that SmoothScroll already knows how to reach.
@@ -121,10 +130,22 @@ case studies, turned by the page's own scroll.
   gradient placeholder while loading.
 - The render loop pauses (`frameloop="never"`) whenever the section scrolls out
   of view (`useInView`).
-- Device pixel ratio is capped (`dpr={[1, 1.8]}` / `[1, 1.7]`).
+- Device pixel ratio is capped (`dpr={[1, 1.8]}` / `[1, 1.7]`), and the gallery
+  re-asserts its drawing buffer against its own box every frame — see the note on
+  R3F's container measurement below.
 - `prefers-reduced-motion` freezes all 3D animation and every CSS animation, and
   renders all reveal states immediately.
 - The 28-cube halo is a single `InstancedMesh` — one draw call.
+
+### A note on canvas sizing
+
+R3F measures a canvas's container when it mounts and keeps that value. On this
+site it has latched a *stale* one: measured in the Persian page, a 1425×1001
+drawing buffer inside a 1425×900 box. A buffer that disagrees with its box renders
+the scene at the wrong aspect — visibly stretched — and only in that locale.
+`components/three/GalleryScene.tsx` therefore compares the canvas's own buffer
+against its host element every frame and corrects the renderer and the store when
+they disagree; it settles within a frame or two and then does nothing.
 
 ## Editing content
 

@@ -432,25 +432,6 @@ body {
   }
 }
 
-/* The gallery floor: a grid lying down, so the wall reads as a room you are
-   standing in rather than a carousel floating in the dark. Decorative only. */
-.gallery-floor {
-  position: absolute;
-  inset-inline: -20%;
-  bottom: -8%;
-  height: 52%;
-  pointer-events: none;
-  opacity: 0.75;
-  background-image:
-    linear-gradient(to right, var(--hairline) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--hairline) 1px, transparent 1px);
-  background-size: 5.5rem 5.5rem;
-  transform: perspective(900px) rotateX(64deg);
-  transform-origin: bottom center;
-  mask-image: linear-gradient(to top, black, transparent 72%);
-  -webkit-mask-image: linear-gradient(to top, black, transparent 72%);
-}
-
 /* ---------------------------------------------------------------- preloader */
 
 .preloader-curtain {
@@ -583,19 +564,7 @@ button:hover .arrow-forward {
   display: inline-block;
 }
 
-/*
-  Reading direction for the 3D gallery. The wall writes one transform for both
-  directions and multiplies its horizontal offset and Y-rotation by this sign,
-  so the gallery travels the other way in RTL without the component ever
-  branching on direction.
-*/
-:root {
-  --gallery-sign: 1;
-}
 
-html[dir="rtl"] {
-  --gallery-sign: -1;
-}
 
 html[dir="rtl"] .arrow-forward,
 html[dir="rtl"] .flip-rtl {

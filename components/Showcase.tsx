@@ -1,13 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
-  motion,
+  useInView,
   useMotionValue,
   useMotionValueEvent,
   useScroll,
-  useSpring,
-  useTransform,
-  type MotionValue,
 } from "motion/react";
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
@@ -18,87 +16,26 @@ import {
   usePrefersReducedMotion,
 } from "@/components/Reveal";
 import SiteFrame from "@/components/SiteFrame";
-import { accentColor } from "@/lib/accents";
-import type { Dictionary, Project } from "@/lib/dictionaries/types";
+import type { Dictionary } from "@/lib/dictionaries/types";
 import { NAV_OFFSET, cn } from "@/lib/util";
+
+/** Scroll distance between two sites, in vh. Also sets the section's length. */
+const SLOT_SCROLL = 62;
+
+/*
+  The room is real 3D — panels, lights, reflections — so it is a canvas, and
+  every canvas in this repository is dynamically imported with `ssr: false` and
+  a CSS placeholder, per the conventions in AGENTS.md.
+*/
+const GalleryScene = dynamic(() => import("@/components/three/GalleryScene"), {
+  ssr: false,
+  loading: () => <div className="canvas-fallback absolute inset-0" />,
+});
 
 type ShowcaseProps = {
   gallery: Dictionary["gallery"];
   projects: Dictionary["projects"];
 };
-
-/*
-  The wall's geometry, in one place. Each frame is placed by its distance from
-  the front of the wall, in slots, so the numbers read as a physical layout:
-  58% of a frame's own width sideways, 260 px back, 22° turned in.
-*/
-const SLOT_X = 58;
-const SLOT_Z = 260;
-const SLOT_Y = 22;
-/** Scroll distance between two frames, in vh. Also sets the section's length. */
-const SLOT_SCROLL = 62;
-
-type GallerySlotProps = {
-  project: Project;
-  index: number;
-  total: number;
-  front: number;
-  progress: MotionValue<number>;
-};
-
-/**
- * One site on the wall.
- *
- * The transform is a single motion value derived from scroll progress, so the
- * whole wall is scrubbed by the compositor: nothing here re-renders while the
- * gallery travels. `--gallery-sign` flips the horizontal offset and the
- * Y-rotation in RTL, which is why there is no direction branch either.
- */
-function GallerySlot({
-  project,
-  index,
-  total,
-  front,
-  progress,
-}: GallerySlotProps) {
-  const transform = useTransform(progress, (value) => {
-    const distance = index - value * (total - 1);
-    const depth = Math.abs(distance);
-    const scale = 1 - Math.min(depth, 3) * 0.035;
-
-    return [
-      `translate3d(calc(${(distance * SLOT_X).toFixed(2)}% * var(--gallery-sign)), 0, ${(-depth * SLOT_Z).toFixed(0)}px)`,
-      `rotateY(calc(${(distance * SLOT_Y).toFixed(2)}deg * var(--gallery-sign)))`,
-      `scale(${scale.toFixed(3)})`,
-    ].join(" ");
-  });
-
-  const opacity = useTransform(progress, (value) => {
-    const depth = Math.abs(index - value * (total - 1));
-    return depth <= 1 ? 1 : Math.max(0.25, 1 - (depth - 1) * 0.45);
-  });
-
-  const isFront = index === front;
-
-  return (
-    <motion.div
-      className="[grid-area:1/1] w-[min(80vw,40rem)]"
-      style={{ transform, opacity }}
-    >
-      <div className="relative shadow-[0_40px_120px_-50px_rgb(0_0_0/1)]">
-        <SiteFrame project={project} />
-
-        <span
-          aria-hidden="true"
-          className={cn(
-            "pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-bone/25 transition-opacity duration-700 ease-expo",
-            isFront ? "opacity-100" : "opacity-0",
-          )}
-        />
-      </div>
-    </motion.div>
-  );
-}
 
 /**
  * The gallery itself: one tall track, one sticky viewport, four sites on a wall
@@ -124,15 +61,13 @@ function GalleryStage({ gallery, projects }: ShowcaseProps) {
     setFront((current) => (current === next ? current : next));
   });
 
-  // Pointer parallax: the whole room leans a couple of degrees towards the
-  // cursor, which is what stops a 3D scene reading as a flat slideshow.
+  // Pointer parallax: the camera leans with the cursor, which is what stops a
+  // 3D scene reading as a flat slideshow. The scene reads these per frame.
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
-  const lean = { stiffness: 70, damping: 20, mass: 0.4 };
-  const leanX = useSpring(pointerY, lean);
-  const leanY = useSpring(pointerX, lean);
-  const rotateX = useTransform(leanX, (value) => 2.6 + value * 2.6);
-  const rotateY = useTransform(leanY, (value) => value * 3.4);
+
+  const stageRef = useRef<HTMLDivElement>(null);
+  const onScreen = useInView(stageRef, { amount: 0.05 });
 
   const span = (total - 1) * SLOT_SCROLL;
   const current = items[front];
@@ -179,41 +114,19 @@ function GalleryStage({ gallery, projects }: ShowcaseProps) {
         it the containing block for `position: sticky` and breaks the track.
       */}
       <div
-        className="sticky top-0 flex h-[100svh] items-center overflow-hidden"
+        ref={stageRef}
+        className="sticky top-0 h-[100svh] overflow-hidden"
         onPointerMove={onPointerMove}
         onPointerLeave={resetParallax}
       >
-        {items.map((item, index) => (
-          <div
-            key={`wash-${item.id}`}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 transition-opacity duration-1000 ease-expo"
-            style={{
-              opacity: index === front ? 1 : 0,
-              background: `radial-gradient(42rem 28rem at 50% 42%,${accentColor[item.accent]}21,transparent 68%)`,
-            }}
-          />
-        ))}
-
-        <div aria-hidden="true" className="gallery-floor" />
-
-        <div className="absolute inset-x-0 top-0 bottom-[9vh] [perspective:1700px]">
-          <motion.div
-            className="grid h-full place-items-center [transform-style:preserve-3d]"
-            style={{ rotateX, rotateY }}
-          >
-            {items.map((item, index) => (
-              <GallerySlot
-                key={item.id}
-                project={item}
-                index={index}
-                total={total}
-                front={front}
-                progress={scrollYProgress}
-              />
-            ))}
-          </motion.div>
-        </div>
+        <GalleryScene
+          projects={items}
+          progress={scrollYProgress}
+          pointerX={pointerX}
+          pointerY={pointerY}
+          front={front}
+          active={onScreen}
+        />
 
         <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--nav-h)+1.25rem)] z-20">
           <div className="mx-auto max-w-7xl px-[var(--shell)]">
