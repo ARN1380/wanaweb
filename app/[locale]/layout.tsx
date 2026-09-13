@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import {
+  Cairo_Play,
   Geist,
   Geist_Mono,
   Instrument_Serif,
-  Noto_Kufi_Arabic,
-  Noto_Nastaliq_Urdu,
+  Lalezar,
   Noto_Sans_Arabic,
   Vazirmatn,
 } from "next/font/google";
@@ -53,11 +53,13 @@ const instrumentSerif = Instrument_Serif({
   locales need their own body, label and accent faces — the roles are wired up
   once in `globals.css` under `html[lang]`.
 
-  The accent faces are display scripts rather than text faces: Nastaliq for
-  Persian (the calligraphic hand the language is set in when it wants to look
-  like itself) and Kufi for Arabic (geometric, which is what the iridescent ramp
-  wants to travel along). Both are Noto, so neither skips the letters or the
-  marks these languages actually use.
+  The accent faces are modern *display* scripts, not text faces and not the
+  traditional hands: Lalezar for Persian (heavy, wide, contemporary — the voice
+  of an Iranian poster rather than a calligrapher's pen) and Cairo Play for
+  Arabic (geometric with playful alternates, so the word carrying the gradient
+  looks designed rather than quoted). The earlier Nastaliq/Kufi pair read as
+  historical — see the agent log — and neither script has a true italic for the
+  accent to lean on, so the display cut is what has to carry it.
 
   `preload: false` is deliberate: the browser only fetches a webfont when a
   rule actually uses it, so keeping these off the preload list costs the
@@ -79,14 +81,17 @@ const arabicSans = Noto_Sans_Arabic({
   preload: false,
 });
 
-const accentPersian = Noto_Nastaliq_Urdu({
+/* Single weight, and a heavy one by design — Lalezar is drawn for headlines. */
+const accentPersian = Lalezar({
   variable: "--font-accent-fa",
   subsets: ["arabic", "latin"],
+  weight: "400",
   display: "swap",
   preload: false,
 });
 
-const accentArabic = Noto_Kufi_Arabic({
+/* Variable, so the accent can be set at a display weight (`globals.css`). */
+const accentArabic = Cairo_Play({
   variable: "--font-accent-ar",
   subsets: ["arabic", "latin"],
   display: "swap",

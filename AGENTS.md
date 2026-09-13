@@ -78,7 +78,7 @@ system, and a contact form that hands off to email.
 | **Intro preloader** | ✅ Done | Once per session, respects reduced motion |
 | **Multilingual routing** | ✅ Done | `/` = English, `/fa`, `/ar`; all three prerendered |
 | **RTL + locale fonts** | ✅ Done | `html[lang]` type roles, `dir="rtl"` typography — see §5 |
-| **Accent display faces** | ✅ Done | Nastaliq (fa) / Kufi (ar) on the coloured words, with measured mask headroom — see §8.14 |
+| **Accent display faces** | ✅ Done | Lalezar (fa) / Cairo Play (ar) on the coloured words, with measured mask headroom — see §8.14 |
 | **Language switcher** | ✅ Done | `components/LanguageSwitcher.tsx`, desktop nav + mobile menu |
 | **Custom 404** | ✅ Done | `app/[locale]/[...rest]/not-found.tsx`, localised |
 | **sitemap / robots** | ✅ Done | `app/sitemap.ts` (hreflang), `app/robots.ts` |
@@ -214,13 +214,15 @@ Instrument Serif *italic* (editorial accent words, applied via
 in their own families through the same three roles — see *Languages and type
 roles* at the end of this section.
 
-**Accent faces are script-native, not a Latin italic.** The coloured word in a
-headline renders in **Noto Nastaliq Urdu** in Persian and **Noto Kufi Arabic** in
-Arabic (`--font-accent-fa` / `--font-accent-ar`, wired to `--font-accent` under
-`html[lang]`). Both are display scripts, both drop the italic slant (a
+**Accent faces are modern display cuts, not a Latin italic.** The coloured word
+in a headline renders in **Lalezar** in Persian and **Cairo Play** in Arabic
+(`--font-accent-fa` / `--font-accent-ar`, wired to `--font-accent` under
+`html[lang]`). Both are contemporary display faces, both drop the italic slant (a
 synthesised oblique breaks cursive letterforms) and both keep the iridescent
-ramp. If you add a locale, pick a *display* script for its accent — a text face
-renders like a fallback.
+ramp. The Arabic accent is set at weight 700 so it carries the same optical
+weight as Lalezar, which is heavy at its only weight. If you add a locale, pick a
+*display* cut for its accent — a text face renders like a fallback. If you change
+one, re-measure the mask headroom (§8.14).
 
 **Custom utilities in `globals.css`:** `kicker`, `display-type`, `serif-accent`,
 `iridescent-text`, `glass`, `hairline-t`, `hairline-b`.
@@ -391,26 +393,37 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
     exercise the layout (same line counts, same emphasis words), but nobody has
     proof-read it as a native speaker. Treat it as a first pass — see the status
     board.
-14. **The masked reveal opens its window wider than it used to, and each script
-    asks for a different amount.** The mask is `overflow: hidden`, so whatever ink
-    overflows the line box is cut off — and measured with a canvas ink box, that
-    was real: ~2 px of a Latin italic descender, 2.8 px of Kufi ink in Arabic, and
-    up to **36 px (0.48em) of Nastaliq ascenders** in Persian on `خسته‌کننده`.
-    Each locale now gets the headroom it needs, and every rule pairs `padding`
-    with an equal, opposite `margin`, so the window grows while the **line itself
-    does not move** — the heading metrics are byte-identical to the Latin ones:
+14. **The masked reveal opens its window wider than the Latin mask, and each
+    script asks for its own amount.** The mask is `overflow: hidden`, so whatever
+    ink overflows the line box is cut off, and a canvas ink box says that is real:
+    ~2 px of the Latin Instrument Serif descender, 36 px (0.48em) of Nastaliq
+    ascenders in Persian under the old calligraphic pairing, and ~16 px of Cairo
+    Play's descender when the accent was first swapped in at Kufi's old padding.
+    Each locale gets the headroom its *current* face needs, and every rule pairs
+    `padding` with an equal, opposite `margin`, so the window grows while the
+    **line itself does not move** — the heading metrics are byte-identical to the
+    Latin ones:
 
     | Selector | top | bottom (net flow) |
     | --- | --- | --- |
     | `.reveal-mask` | `0.06em` | `0.12em` with `margin-bottom: -0.06em` → `0.06em` |
-    | `html[dir="rtl"] .reveal-mask` | – | `0.36em` with `margin-bottom: -0.06em` → `0.3em` |
-    | `html[lang="fa"] .reveal-mask` | `0.6em` | `0.58em` with `margin-bottom: -0.06em` → `0.52em` |
-    | `html[lang="ar"] .reveal-mask` | `0.3em` | inherited |
+    | `html[dir="rtl"] .reveal-mask` | – | `0.12em` with `margin-bottom: -0.06em` → `0.06em` |
+    | `html[lang="fa"] .reveal-mask` | `0.12em` | inherited |
+    | `html[lang="ar"] .reveal-mask` | `0.12em` | inherited |
+
+    The RTL rows were `0.36em` / `0.6em` / `0.3em` while the accents were Nastaliq
+    and Kufi; Lalezar and Cairo Play descend far less, so the RTL mask now matches
+    the Latin one and RTL headings regained the Latin rhythm. Measured clearances
+    after the swap (minimum across every masked accent run, at the largest
+    heading): Persian **+14 / +15.5 px**, Arabic **+9.2 / +13.5 px**, Latin
+    **+7.4 / +2.5 px**.
 
     Do not "tidy" those negative margins away: deleting one silently adds or
-    removes vertical space in that locale's headings. If you change an accent
-    face or its size, re-measure before trusting it — a display script's ascent is
-    not predictable from its em box.
+    removes vertical space in that locale's headings. If you change an accent face
+    or its size, re-measure before trusting it — an ascent is not predictable from
+    an em box. Note that a masked line is *translated* until its reveal fires, and
+    a transform moves `getBoundingClientRect`: settle the reveals before measuring
+    or every number comes back wrong.
 
 15. **The gallery's reduced-motion branch is a different *tree*, which is why it
     cannot use `useReducedMotion`.** `components/Showcase.tsx` renders either a
@@ -806,6 +819,75 @@ trap is one branch away in `Work.tsx` (§10.12).
 is still §10.10 — a native speaker on `fa.ts` and `ar.ts`. This commit carries both
 this session's work and session 5's uncommitted multilingual changes (its log entry
 ends "nothing is committed from this session"; it now is).
+
+### 2026-09-13 · Buffy (session 7) · modern accent faces for Persian and Arabic
+
+**What I was doing.** Human feedback: the coloured words in the RTL locales were
+set in a **classic** pair — Noto Nastaliq Urdu (calligraphic) and Noto Kufi Arabic
+(geometric-classical) — and they want a cool, modern face there instead. Change,
+confirm, commit, push.
+
+**What I did.** `app/[locale]/layout.tsx` and `app/globals.css` only — no
+component changed, because the type roles were already resolved through
+`--font-accent` from `html[lang]` (§5), which is exactly what that indirection
+was for.
+
+- Persian accent → **Lalezar**: heavy, wide, contemporary — an Iranian poster
+  voice rather than a calligrapher's pen.
+- Arabic accent → **Cairo Play** at weight 700: a modern variable Arabic display
+  cut, set at 700 so it carries the same optical weight as Lalezar (heavy at its
+  only weight).
+- Dropped the optical size bump: Nastaliq read *small* and needed `1.14em`; both
+  new faces read *large*, so the accent is `1em` in both locales and the heading
+  keeps the Latin metrics.
+- Re-tuned the mask headroom (§8.14 requires this after any accent change). The
+  RTL bottom padding (`0.36em`) and the Persian top lift (`0.6em`) existed for
+  Nastaliq's cascade; both are now `0.12em`, so the RTL mask matches the Latin one
+  and RTL headings regained the Latin rhythm.
+
+**The bug this surfaced.** Swapping the faces *without* re-measuring would have
+silently clipped Cairo Play: at Kufi's old padding the Arabic accent's descender
+overran the mask by **16 px** (measured clearance `-15.8 px` on `دليل`).
+
+**Verification — measured, not assumed.** Headless Chrome over CDP, canvas ink
+boxes (`actualBoundingBoxAscent/Descent`) against each `.reveal-mask` box, with
+all reveals settled first. (A masked line is translated until its reveal fires and
+a transform moves `getBoundingClientRect`, so the first run of this harness
+returned nonsense; the lesson is recorded in §8.14.)
+
+- Minimum clearance over every masked accent run at the largest heading: Persian
+  **+14 / +15.5 px**, Arabic **+9.2 / +13.5 px**, Latin control **+7.4 / +2.5 px**
+  — nothing clipped anywhere, and both new faces have more room than the Latin
+  accent does.
+- Ink envelope: Lalezar 0.81em above the baseline / 0.33em below; Cairo Play
+  1.0em / 0.27em.
+- Coverage: `document.fonts.check` true for every run, and every accent *word*'s
+  ink width differs from its fallback family — so the words really render in
+  Lalezar and Cairo Play rather than falling back to Vazirmatn / Noto Sans Arabic.
+  The only same-width run is the 16 px decorative `“` in the testimonials, where
+  both faces happen to share the advance.
+- `npx tsc --noEmit` silent · `npm run lint` silent · `npm run build`
+  `Compiled successfully` with `● /en`, `● /fa`, `● /ar` prerendered · route
+  matrix unchanged (`/`, `/fa`, `/ar` 200 · `/en` 308 · `/nope`, `/fa/nope` 404) ·
+  0 px horizontal overflow in all three locales.
+
+**Considered and rejected**, so it does not get re-litigated: for Arabic — Kufam,
+Reem Kufi and Rakkas (all still read as Kufi to anyone who is not a type
+specialist, which is the objection), Alexandria / Almarai / Zain / IBM Plex Sans
+Arabic (text faces; they make the accent look like body copy), Marhey (too
+informal beside an editorial headline); for Persian — Estedad and Vazirmatn at a
+heavier weight (too close to the body face to read as an accent), Mirza and Gulzar
+(Nastaliq again).
+
+**Open request, not started.** At the end of this session the human also asked
+for "a 3D gallery for website showcases too" — wording that is ambiguous against
+session 6's gallery, which already exists but is CSS 3D rather than WebGL. Ask
+before building: replace the wall with a true WebGL scene, add a second showcase
+alongside it, or deepen the existing one.
+
+**Next agent.** The masks are correct for these faces *at these sizes*. Change
+the face, the size or the padding, and re-run the ink measurement — §8.14 has the
+method and the trap.
 
 
 

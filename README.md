@@ -26,8 +26,8 @@ The site is a single page, prerendered once per language:
 | Language | URL | `lang` / `dir` | Fonts |
 | --- | --- | --- | --- |
 | English (default) | `/` | `en` / `ltr` | Geist, Geist Mono, Instrument Serif |
-| Persian | `/fa` | `fa` / `rtl` | Vazirmatn + Noto Nastaliq Urdu (accent) |
-| Arabic | `/ar` | `ar` / `rtl` | Noto Sans Arabic + Noto Kufi Arabic (accent) |
+| Persian | `/fa` | `fa` / `rtl` | Vazirmatn + Lalezar (accent) |
+| Arabic | `/ar` | `ar` / `rtl` | Noto Sans Arabic + Cairo Play (accent) |
 
 - English keeps the unprefixed URL, so `/` stays canonical. `proxy.ts` rewrites
   unprefixed paths onto the default locale's route (`/en`) and redirects `/en/…`
@@ -169,11 +169,12 @@ Defined once in `app/globals.css`:
   violet → cyan → lime ramp with acid lime `#c8ff4d` as the signature accent.
 - Type roles: `--font-body`, `--font-label` and `--font-accent`, resolved per
   locale from `html[lang]`. Latin uses Geist / Geist Mono / Instrument Serif
-  italic; Persian uses Vazirmatn with **Noto Nastaliq Urdu** for the accent, and
-  Arabic uses Noto Sans Arabic with **Noto Kufi Arabic** for the accent (see
-  **Languages**). The editorial accent is still written
-  `<em class="serif-accent">` and still carries the iridescent gradient in every
-  language.
+  italic; Persian uses Vazirmatn with **Lalezar** for the accent, and Arabic uses
+  Noto Sans Arabic with **Cairo Play** (weight 700) for the accent (see
+  **Languages**). Both RTL accents are modern *display* cuts rather than the
+  traditional hands — they carry the iridescent gradient and drop only the italic
+  slant, which is why the coloured word stays an accent even without one. The
+  editorial accent is still written `<em class="serif-accent">`.
 - RTL: `html[dir="rtl"]` zeroes letter-spacing (both scripts join cursively) and
   loosens the display leading so the masked reveal cannot clip descenders.
   Everything else — sizes, weights, ramps, masks, timings — is shared.

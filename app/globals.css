@@ -50,13 +50,13 @@
 html[lang="fa"] {
   --font-body: var(--font-vazirmatn), Tahoma, sans-serif;
   --font-label: var(--font-vazirmatn), Tahoma, sans-serif;
-  --font-accent: var(--font-accent-fa), var(--font-vazirmatn), serif;
+  --font-accent: var(--font-accent-fa), var(--font-vazirmatn), sans-serif;
 }
 
 html[lang="ar"] {
   --font-body: var(--font-arabic-sans), Tahoma, sans-serif;
   --font-label: var(--font-arabic-sans), Tahoma, sans-serif;
-  --font-accent: var(--font-accent-ar), var(--font-arabic-sans), serif;
+  --font-accent: var(--font-accent-ar), var(--font-arabic-sans), sans-serif;
 }
 
 @theme inline {
@@ -480,7 +480,9 @@ body {
 
   Everything else — sizes, weights, the iridescent ramps, the masks, the
   rotations, every timing — is untouched, so the new locales inherit the same
-  visual system as the Latin one.
+  visual system as the Latin one. The accent faces were swapped from Nastaliq
+  and Kufi to Lalezar and Cairo Play, and the mask headroom below went with
+  them: both display cuts need far less room than the calligraphic pair did.
 */
 html[dir="rtl"] .display-type,
 html[dir="rtl"] .kicker,
@@ -492,62 +494,72 @@ html[dir="rtl"] .display-type {
   line-height: 1.3;
 }
 
-/* Deep descenders need breathing room inside the masked line reveal. */
+/*
+  Breathing room inside the masked line reveal. Lalezar and Cairo Play descend
+  well short of the display faces this replaced, so the RTL window now matches
+  the Latin mask exactly — padding paired with an equal, opposite margin — and
+  RTL headings keep the same vertical rhythm as the Latin ones.
+*/
 html[dir="rtl"] .reveal-mask {
-  padding-bottom: 0.36em;
+  padding-bottom: 0.12em;
   margin-bottom: -0.06em;
 }
 
 html[dir="rtl"] .serif-accent {
   /*
-    Arabic-script faces have no true italic, and a synthesised oblique reads as
-    broken on cursive letterforms — so the accent keeps its gradient, size and
-    weight and gives up only the slant.
+    Neither script has a true italic, and a synthesised oblique reads as broken
+    on cursive letterforms — so both accents keep their gradient, size and
+    weight and give up only the slant. The editorial difference is carried by
+    the face itself: Lalezar and Cairo Play are display cuts, so the word still
+    reads as a deliberate accent rather than as body text.
   */
   font-style: normal;
   padding-inline-end: 0;
   /*
-    `line-height: 1` keeps the display script out of the line-box calculation:
-    Nastaliq in particular cascades far below the baseline, and letting its
-    inline box set the line height would space RTL headlines unevenly. The ink
-    is still free to overflow — the mask below is what must not clip it.
+    `line-height: 1` keeps these display faces out of the line-box
+    calculation: their ascent and descent are generous relative to their em,
+    and letting the inline box set the line height would space RTL headlines
+    unevenly. The ink is still free to overflow — the mask below is what must
+    not clip it.
   */
   line-height: 1;
+  /*
+    Both display faces read *large* for their size — unlike the Nastaliq this
+    replaced, which had to be nudged up to stay legible next to the body face —
+    so the accent is now set at its natural size and the heading keeps the Latin
+    metrics. Measured across every masked accent run with the canvas ink box:
+    Lalezar reaches 0.81em above the baseline and 0.33em below it, Cairo Play
+    1.0em and 0.27em. Against the mask window above, that leaves a minimum
+    clearance of +14 / +15.5px in Persian and +9.2 / +13.5px in Arabic at the
+    largest heading size — both comfortably positive, and better than the Latin
+    accent's own +7.4 / +2.5px budget.
+  */
+  font-size: 1em;
 }
 
 /*
-  Nastaliq reads noticeably smaller than a sans at the same size, so the Persian
-  accent is nudged up; the mask gets extra room underneath for its cascade.
+  Cairo Play is variable, and the Arabic accent is set at a display weight so
+  it matches Lalezar's optical weight in Persian — otherwise the same accent
+  would look light in one RTL locale and heavy in the other.
 */
-html[lang="fa"] .serif-accent {
-  font-size: 1.14em;
+html[lang="ar"] .serif-accent {
+  font-weight: 700;
 }
 
 /*
-  Nastaliq also climbs far above the baseline — measured on this site, a word
-  like «خسته‌کننده» puts its ink 0.48em above the line box that a Latin-metric
-  leading gives it, and the masked reveal would slice the tops off. The mask
-  window is opened upward by exactly the amount it is also pulled up, so the
-  ink gets its headroom while the heading keeps the Latin layout metrics.
+  Both display faces sit close to their Latin metrics, so the mask only needs a
+  lift, not the deep cascade floor Nastaliq required. Each padding is paired
+  with an equal, opposite margin, exactly as the Latin mask is: the window
+  grows, the line does not move.
 */
 html[lang="fa"] .reveal-mask {
-  padding-top: 0.6em;
-  margin-top: -0.6em;
-  padding-bottom: 0.58em;
-  margin-bottom: -0.06em;
+  padding-top: 0.12em;
+  margin-top: -0.12em;
 }
 
-html[lang="ar"] .serif-accent {
-  font-size: 1.06em;
-}
-
-/*
-  Kufi sits closer to its Latin metrics than Nastaliq does, but it still rises
-  past the line box on the tighter headings, so it gets its own small lift.
-*/
 html[lang="ar"] .reveal-mask {
-  padding-top: 0.3em;
-  margin-top: -0.3em;
+  padding-top: 0.12em;
+  margin-top: -0.12em;
 }
 
 /*
