@@ -1,9 +1,38 @@
 "use client";
 
 import { useInView } from "motion/react";
-import { useRef, type CSSProperties, type ReactNode } from "react";
+import { useRef, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 
 import { cn, splitEmphasis } from "@/lib/util";
+
+const MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeToMotion(event: () => void): () => void {
+  const query = window.matchMedia(MOTION_QUERY);
+  query.addEventListener("change", event);
+  return () => query.removeEventListener("change", event);
+}
+
+const motionAllowed = () => !window.matchMedia(MOTION_QUERY).matches;
+const motionAllowedOnServer = () => true;
+
+/**
+ * Hydration-safe reduced-motion check, for components that render a *different
+ * tree* rather than merely different styles.
+ *
+ * Reading the media query during the first client render is what makes React
+ * throw a hydration error — the server has no way to know the preference, so it
+ * ships the motion version. `useSyncExternalStore` gives React an explicit
+ * server snapshot, so hydration keeps the server's tree and the reduced-motion
+ * branch lands in a second render, one frame later.
+ */
+export function usePrefersReducedMotion(): boolean {
+  return !useSyncExternalStore(
+    subscribeToMotion,
+    motionAllowed,
+    motionAllowedOnServer,
+  );
+}
 
 type FadeUpProps = {
   children: ReactNode;

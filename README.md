@@ -26,8 +26,8 @@ The site is a single page, prerendered once per language:
 | Language | URL | `lang` / `dir` | Fonts |
 | --- | --- | --- | --- |
 | English (default) | `/` | `en` / `ltr` | Geist, Geist Mono, Instrument Serif |
-| Persian | `/fa` | `fa` / `rtl` | Vazirmatn + Noto Naskh Arabic |
-| Arabic | `/ar` | `ar` / `rtl` | Noto Sans Arabic + Noto Naskh Arabic |
+| Persian | `/fa` | `fa` / `rtl` | Vazirmatn + Noto Nastaliq Urdu (accent) |
+| Arabic | `/ar` | `ar` / `rtl` | Noto Sans Arabic + Noto Kufi Arabic (accent) |
 
 - English keeps the unprefixed URL, so `/` stays canonical. `proxy.ts` rewrites
   unprefixed paths onto the default locale's route (`/en`) and redirects `/en/…`
@@ -61,6 +61,7 @@ The site is a single page, prerendered once per language:
 | Hero | `components/Hero.tsx` | Masked line reveal over a live WebGL scene |
 | Studio | `components/Manifesto.tsx` | Position, animated counters, three pillars |
 | Selected work | `components/Work.tsx` | Four case studies in sticky-stacked cards |
+| The gallery | `components/Showcase.tsx` | Scroll-scrubbed 3D wall of the four sites |
 | Services | `components/Services.tsx` | Six capability cards |
 | 3D Lab | `components/Lab.tsx` | Interactive, draggable 3D scene |
 | Process | `components/Process.tsx` | Four phases with sticky scroll tracking |
@@ -86,6 +87,33 @@ Two independent WebGL scenes, both generated entirely in the browser. There are
 - **`components/three/LabScene.tsx`** — a chrome torus knot, four refracting glass
   orbs and a 28-cube instanced halo, lit by a *procedurally rendered* environment
   built from `Lightformer`s. Drag to orbit; it auto-rotates otherwise.
+
+## The gallery
+
+`components/Showcase.tsx` + `components/SiteFrame.tsx` — a 3D wall of the four
+case studies, turned by the page's own scroll.
+
+- One tall track (`100svh + 62vh per slot`) holds a sticky viewport. Scroll
+  progress fans out into a single transform per frame — sideways, back, and
+  turned in — so nothing re-renders while the wall travels.
+- `components/SiteFrame.tsx` is the preview: a browser window whose contents are
+  **drawn in the browser** from the project's own copy and accent, down to the
+  domain in the address bar. Consistent with the rest of the repository, there is
+  no screenshot involved. Its type is sized in container units (`cqw`), so the
+  same markup reads correctly as a phone-sized frame and as a 40 rem one.
+- **RTL** is handled by one custom property: `--gallery-sign` is `1` in LTR and
+  `-1` under `html[dir="rtl"]`, and the wall multiplies its horizontal offset and
+  Y-rotation by it, so the gallery travels the other way without the component
+  branching on direction.
+- Accessibility: scrolling is the interaction, so the caption strip duplicates
+  the state (index, client, sector) and the dots are anchors onto scroll markers
+  (`#gallery-1`…`#gallery-4`) that SmoothScroll already knows how to reach.
+- `prefers-reduced-motion` drops the whole 3D track and renders the same four
+  previews as a static two-column grid instead. That is a *different tree*, so
+  the check goes through `usePrefersReducedMotion()` in `components/Reveal.tsx`,
+  which reads the media query through `useSyncExternalStore` — reading it during
+  the first client render would mismatch the server's HTML and throw a hydration
+  error.
 
 ### Performance guards
 
@@ -119,15 +147,17 @@ exact substring of the `title`/`headline` line they belong to — that is the wo
 
 ### Placeholders to replace before launch
 
-- `site.url` in `lib/content.ts` — currently a placeholder domain, used as
-  `metadataBase` and in the structured data.
+- `site.url` in `lib/dictionaries/en.ts` — currently a placeholder domain, used
+  as `metadataBase` and in the structured data.
 - `site.email` — used by the contact form's `mailto:` handoff.
 - `site.socials` — the X, LinkedIn and Dribbble URLs are placeholders.
-- **Team names, roles and bios in `lib/people.ts` are illustrative** — swap them
-  for the real team, or delete entries (the grid reflows automatically).
-- Testimonials in `lib/people.ts` are written as anonymous role + company
+- **Team names, roles and bios (`team.members` in each dictionary) are
+  illustrative** — swap them for the real team, or delete entries (the grid
+  reflows automatically). Alireza Naghavi and Abbas Vaziri are the two founders;
+  Alireza leads the list.
+- Testimonials (`testimonials.items`) are written as anonymous role + company
   attributions; replace them with real, attributable quotes before publishing.
-- **Case studies in `lib/projects.ts` are illustrative.** The client names,
+- **Case studies (`projects.items`) are illustrative.** The client names,
   metrics and outcomes were written to demonstrate the layout. Replace them with
   real, permissioned work — or delete entries; the stack reflows automatically.
 
@@ -139,16 +169,26 @@ Defined once in `app/globals.css`:
   violet → cyan → lime ramp with acid lime `#c8ff4d` as the signature accent.
 - Type roles: `--font-body`, `--font-label` and `--font-accent`, resolved per
   locale from `html[lang]`. Latin uses Geist / Geist Mono / Instrument Serif
-  italic; Persian and Arabic swap in their own families (see **Languages**). The
-  editorial accent is still written `<em class="serif-accent">` and still
-  carries the iridescent gradient in every language.
+  italic; Persian uses Vazirmatn with **Noto Nastaliq Urdu** for the accent, and
+  Arabic uses Noto Sans Arabic with **Noto Kufi Arabic** for the accent (see
+  **Languages**). The editorial accent is still written
+  `<em class="serif-accent">` and still carries the iridescent gradient in every
+  language.
 - RTL: `html[dir="rtl"]` zeroes letter-spacing (both scripts join cursively) and
   loosens the display leading so the masked reveal cannot clip descenders.
   Everything else — sizes, weights, ramps, masks, timings — is shared.
+- Masked reveal: the line mask opens by `0.06em` at each end and the box is
+  pulled back by the same amount, so ink that overflows the line box — a Latin
+  italic swash, Nastaliq's ascenders — is never sliced, while the line itself
+  stays exactly where the layout put it. Persian and Arabic ask for more (see
+  `html[lang]` blocks in `globals.css`).
 - Custom utilities: `kicker`, `display-type`, `serif-accent`,
   `iridescent-text`, `glass`, `hairline-t`, `hairline-b`.
 - Supporting layers: film grain, aurora wash and a masked grid (`.grain`,
-  `.aurora`, `.grid-pattern` + `.gridlines`).
+  `.aurora`, `.grid-pattern` + `.gridlines`, `.gallery-floor`).
+- Accent tinting is shared: `lib/accents.ts` maps an accent name to the classes
+  and colour the Selected Work section and the gallery both use, so the two
+  cannot drift apart.
 
 ## Accessibility
 

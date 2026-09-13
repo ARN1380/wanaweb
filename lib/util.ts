@@ -64,6 +64,13 @@ export function createRandom(seed: number): () => number {
 /** Broadcast a request to Lenis without coupling the components to it. */
 export const LENIS_EVENT = "wanaweb:lenis";
 
+/**
+ * How far below the top of the viewport an anchor target is parked, in pixels:
+ * enough to clear the fixed nav. SmoothScroll offsets every in-page jump by it,
+ * so anything that has to place a scroll target lands on the same line.
+ */
+export const NAV_OFFSET = 84;
+
 export function setSmoothScrollStopped(stopped: boolean): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(

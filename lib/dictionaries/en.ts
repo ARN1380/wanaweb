@@ -318,6 +318,15 @@ export const en = {
     ],
   },
 
+  gallery: {
+    label: "The gallery",
+    title: "Every site we ship, hung on one wall.",
+    emphasis: "one wall",
+    body: "The same four engagements, this time as the sites themselves. Scroll to walk the wall — the frame that reaches the front is the one the caption describes. Every preview here is drawn in your browser; there is not a single screenshot in this section.",
+    hint: "Scroll to walk the wall",
+    cta: "Start something like this",
+  },
+
   process: {
     label: "Process",
     title: "Four phases. No surprises.",
@@ -436,28 +445,28 @@ export const en = {
     body: "No account managers, no telephone game between three agencies. You talk directly to the people writing the code and drawing the artwork.",
     members: [
       {
+        name: "Alireza Naghavi",
+        role: "Founder & Lead Engineer",
+        initials: "AN",
+        accent: "violet",
+        focus: "Next.js · Performance · Architecture",
+        bio: "Co-founded WanaWeb, and still writes most of what ships. Turns ambitious design into fast, typed systems — and sets the performance budgets he then has to hit.",
+        links: [{ label: "GitHub", href: "https://github.com/ARN1380" }],
+      },
+      {
         name: "Abbas Vaziri",
         role: "Founder",
         initials: "AV",
         accent: "lime",
         focus: "Direction · Partnerships · Strategy",
-        bio: "Started WanaWeb on a stubborn belief that craft and speed are not a trade-off. Sets the studio's direction and stays close to every engagement we take on.",
+        bio: "Sets the studio's direction and stays close to every engagement we take on. Co-founded WanaWeb on a stubborn belief that craft and speed are not a trade-off.",
         links: [],
-      },
-      {
-        name: "Alireza Naghavi",
-        role: "Lead Engineer",
-        initials: "AN",
-        accent: "violet",
-        focus: "Next.js · Performance · Architecture",
-        bio: "Turns ambitious design into fast, typed systems. Writes the performance budgets he then has to hit.",
-        links: [{ label: "GitHub", href: "https://github.com/ARN1380" }],
       },
       {
         name: "Sara Mehrabi",
         role: "Creative Director",
         initials: "SM",
-        accent: "lime",
+        accent: "violet",
         focus: "Art direction · Typography · Brand",
         bio: "Turns a positioning paragraph into a visual language. Obsessive about grids, type scales and the exact grey of a background.",
         links: [],
@@ -634,6 +643,7 @@ export const en = {
         title: "Explore",
         links: [
           { label: "3D Lab", href: "#lab" },
+          { label: "Gallery", href: "#gallery" },
           { label: "Process", href: "#process" },
           { label: "Toolkit", href: "#stack" },
           { label: "FAQ", href: "#faq" },

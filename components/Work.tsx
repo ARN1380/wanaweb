@@ -4,23 +4,12 @@ import { motion, useScroll, useTransform, type MotionValue } from "motion/react"
 import { useRef } from "react";
 
 import { FadeUp, Kicker, MaskedLines } from "@/components/Reveal";
-import type { Accent, Dictionary, Project } from "@/lib/dictionaries/types";
+import { accentDot, accentWash } from "@/lib/accents";
+import type { Dictionary, Project } from "@/lib/dictionaries/types";
 import { cn, prefersReducedMotion } from "@/lib/util";
 
 type WorkProps = {
   projects: Dictionary["projects"];
-};
-
-const accentWash: Record<Accent, string> = {
-  violet: "from-violet/30 via-cyan/10 to-transparent",
-  cyan: "from-cyan/30 via-lime/10 to-transparent",
-  lime: "from-lime/25 via-violet/10 to-transparent",
-};
-
-const accentDot: Record<Accent, string> = {
-  violet: "bg-violet",
-  cyan: "bg-cyan",
-  lime: "bg-lime",
 };
 
 type ProjectCardProps = {

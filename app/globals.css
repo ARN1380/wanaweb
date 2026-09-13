@@ -41,20 +41,22 @@
 /*
   Persian and Arabic get their own families: Geist has no Arabic-script
   coverage, so without this the whole page would fall back to a system font.
-  Farsi uses Vazirmatn; Arabic uses Noto Sans Arabic. Both locales take the Naskh
-  serif as the editorial accent face (the Latin ramp's Instrument Serif italic
-  has no Arabic glyphs).
+  Farsi uses Vazirmatn; Arabic uses Noto Sans Arabic.
+
+  The accent face — the word carrying the iridescent ramp — is a display script
+  in each locale, since neither Instrument Serif nor a text face has the glyphs:
+  Nastaliq for Persian, Kufi for Arabic.
 */
 html[lang="fa"] {
   --font-body: var(--font-vazirmatn), Tahoma, sans-serif;
   --font-label: var(--font-vazirmatn), Tahoma, sans-serif;
-  --font-accent: var(--font-arabic-serif), var(--font-vazirmatn), serif;
+  --font-accent: var(--font-accent-fa), var(--font-vazirmatn), serif;
 }
 
 html[lang="ar"] {
   --font-body: var(--font-arabic-sans), Tahoma, sans-serif;
   --font-label: var(--font-arabic-sans), Tahoma, sans-serif;
-  --font-accent: var(--font-arabic-serif), var(--font-arabic-sans), serif;
+  --font-accent: var(--font-accent-ar), var(--font-arabic-sans), serif;
 }
 
 @theme inline {
@@ -281,7 +283,17 @@ body {
 .reveal-mask {
   display: block;
   overflow: hidden;
-  padding-bottom: 0.06em;
+  /*
+    The window is opened by 0.06em at each end and the box pulled back by the
+    same amount, so ink that overflows the line box — a deep descender, or a
+    display script's ascenders — is never sliced off, while the line stays
+    exactly where the layout put it. The pairing is deliberate: padding grows
+    the window, the equal negative margin cancels its effect on flow.
+  */
+  padding-top: 0.06em;
+  margin-top: -0.06em;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.06em;
 }
 
 .reveal-line {
@@ -420,6 +432,25 @@ body {
   }
 }
 
+/* The gallery floor: a grid lying down, so the wall reads as a room you are
+   standing in rather than a carousel floating in the dark. Decorative only. */
+.gallery-floor {
+  position: absolute;
+  inset-inline: -20%;
+  bottom: -8%;
+  height: 52%;
+  pointer-events: none;
+  opacity: 0.75;
+  background-image:
+    linear-gradient(to right, var(--hairline) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hairline) 1px, transparent 1px);
+  background-size: 5.5rem 5.5rem;
+  transform: perspective(900px) rotateX(64deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to top, black, transparent 72%);
+  -webkit-mask-image: linear-gradient(to top, black, transparent 72%);
+}
+
 /* ---------------------------------------------------------------- preloader */
 
 .preloader-curtain {
@@ -463,7 +494,8 @@ html[dir="rtl"] .display-type {
 
 /* Deep descenders need breathing room inside the masked line reveal. */
 html[dir="rtl"] .reveal-mask {
-  padding-bottom: 0.3em;
+  padding-bottom: 0.36em;
+  margin-bottom: -0.06em;
 }
 
 html[dir="rtl"] .serif-accent {
@@ -474,6 +506,48 @@ html[dir="rtl"] .serif-accent {
   */
   font-style: normal;
   padding-inline-end: 0;
+  /*
+    `line-height: 1` keeps the display script out of the line-box calculation:
+    Nastaliq in particular cascades far below the baseline, and letting its
+    inline box set the line height would space RTL headlines unevenly. The ink
+    is still free to overflow — the mask below is what must not clip it.
+  */
+  line-height: 1;
+}
+
+/*
+  Nastaliq reads noticeably smaller than a sans at the same size, so the Persian
+  accent is nudged up; the mask gets extra room underneath for its cascade.
+*/
+html[lang="fa"] .serif-accent {
+  font-size: 1.14em;
+}
+
+/*
+  Nastaliq also climbs far above the baseline — measured on this site, a word
+  like «خسته‌کننده» puts its ink 0.48em above the line box that a Latin-metric
+  leading gives it, and the masked reveal would slice the tops off. The mask
+  window is opened upward by exactly the amount it is also pulled up, so the
+  ink gets its headroom while the heading keeps the Latin layout metrics.
+*/
+html[lang="fa"] .reveal-mask {
+  padding-top: 0.6em;
+  margin-top: -0.6em;
+  padding-bottom: 0.58em;
+  margin-bottom: -0.06em;
+}
+
+html[lang="ar"] .serif-accent {
+  font-size: 1.06em;
+}
+
+/*
+  Kufi sits closer to its Latin metrics than Nastaliq does, but it still rises
+  past the line box on the tighter headings, so it gets its own small lift.
+*/
+html[lang="ar"] .reveal-mask {
+  padding-top: 0.3em;
+  margin-top: -0.3em;
 }
 
 /*
@@ -495,6 +569,20 @@ button:hover .arrow-forward {
 /* Mirror-only variant, for arrows whose motion lives in a Tailwind parent. */
 .flip-rtl {
   display: inline-block;
+}
+
+/*
+  Reading direction for the 3D gallery. The wall writes one transform for both
+  directions and multiplies its horizontal offset and Y-rotation by this sign,
+  so the gallery travels the other way in RTL without the component ever
+  branching on direction.
+*/
+:root {
+  --gallery-sign: 1;
+}
+
+html[dir="rtl"] {
+  --gallery-sign: -1;
 }
 
 html[dir="rtl"] .arrow-forward,

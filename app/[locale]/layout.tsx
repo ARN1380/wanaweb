@@ -3,7 +3,8 @@ import {
   Geist,
   Geist_Mono,
   Instrument_Serif,
-  Noto_Naskh_Arabic,
+  Noto_Kufi_Arabic,
+  Noto_Nastaliq_Urdu,
   Noto_Sans_Arabic,
   Vazirmatn,
 } from "next/font/google";
@@ -52,6 +53,12 @@ const instrumentSerif = Instrument_Serif({
   locales need their own body, label and accent faces — the roles are wired up
   once in `globals.css` under `html[lang]`.
 
+  The accent faces are display scripts rather than text faces: Nastaliq for
+  Persian (the calligraphic hand the language is set in when it wants to look
+  like itself) and Kufi for Arabic (geometric, which is what the iridescent ramp
+  wants to travel along). Both are Noto, so neither skips the letters or the
+  marks these languages actually use.
+
   `preload: false` is deliberate: the browser only fetches a webfont when a
   rule actually uses it, so keeping these off the preload list costs the
   English pages nothing, while the RTL pages pick them up from the same
@@ -72,8 +79,15 @@ const arabicSans = Noto_Sans_Arabic({
   preload: false,
 });
 
-const arabicSerif = Noto_Naskh_Arabic({
-  variable: "--font-arabic-serif",
+const accentPersian = Noto_Nastaliq_Urdu({
+  variable: "--font-accent-fa",
+  subsets: ["arabic", "latin"],
+  display: "swap",
+  preload: false,
+});
+
+const accentArabic = Noto_Kufi_Arabic({
+  variable: "--font-accent-ar",
   subsets: ["arabic", "latin"],
   display: "swap",
   preload: false,
@@ -86,7 +100,8 @@ const fontVariables = cn(
   instrumentSerif.variable,
   vazirmatn.variable,
   arabicSans.variable,
-  arabicSerif.variable,
+  accentPersian.variable,
+  accentArabic.variable,
 );
 
 /** One prerendered route per language; nothing else is routable. */

@@ -73,10 +73,12 @@ system, and a contact form that hands off to email.
 | Testimonials | ✅ Done | Three quotes, anonymised attribution |
 | Contact form | ✅ Done | Client validation + `mailto:` handoff (no backend) |
 | **Selected Work** | ✅ Done | Four case studies, sticky-stacked cards |
+| **Site gallery (3D wall)** | ✅ Done | Scroll-scrubbed wall of the four sites; previews drawn in the browser — see §8.15 |
 | **FAQ** | ✅ Done | Accessible accordion |
 | **Intro preloader** | ✅ Done | Once per session, respects reduced motion |
 | **Multilingual routing** | ✅ Done | `/` = English, `/fa`, `/ar`; all three prerendered |
 | **RTL + locale fonts** | ✅ Done | `html[lang]` type roles, `dir="rtl"` typography — see §5 |
+| **Accent display faces** | ✅ Done | Nastaliq (fa) / Kufi (ar) on the coloured words, with measured mask headroom — see §8.14 |
 | **Language switcher** | ✅ Done | `components/LanguageSwitcher.tsx`, desktop nav + mobile menu |
 | **Custom 404** | ✅ Done | `app/[locale]/[...rest]/not-found.tsx`, localised |
 | **sitemap / robots** | ✅ Done | `app/sitemap.ts` (hreflang), `app/robots.ts` |
@@ -111,7 +113,8 @@ wanaweb/
 │  │  ├─ HeroScene.tsx   ← hero canvas: Core + ParticleField
 │  │  ├─ LabScene.tsx    ← lab canvas: composition, lights, OrbitControls
 │  │  └─ LabObjects.tsx  ← knot / glass orbs / instanced cube ring
-│  ├─ sections           ← Hero, Manifesto, Work, Services, Lab, Process,
+│  ├─ sections           ← Hero, Manifesto, Work, Showcase (the gallery),
+│  │                       SiteFrame (a site mockup), Services, Lab, Process,
 │  │                       Stack, Team, Testimonials, Faq, Contact│  └─ atoms             ← Nav, Footer, Logo, LanguageSwitcher, Reveal,
 │                          SectionHeading, Marquee, Magnetic, Counter, Cursor,
 │                          SmoothScroll, Preloader, ServiceIcon
@@ -122,7 +125,9 @@ wanaweb/
    │  ├─ fa.ts, ar.ts    ← translations, type-checked against en.ts
    │  ├─ types.ts        ← Widen, Dictionary, Accent, ServiceIconName
    │  └─ index.ts        ← getDictionary(locale)
-   └─ util.ts            ← cn, splitEmphasis, createRandom, prefersReducedMotion,
+   ├─ util.ts            ← cn, splitEmphasis, createRandom, prefersReducedMotion,
+   │                       NAV_OFFSET, setSmoothScrollStopped
+   └─ accents.ts         ← accent → class/colour maps shared by Work and Showcase
                            setSmoothScrollStopped
 ```
 
@@ -209,6 +214,14 @@ Instrument Serif *italic* (editorial accent words, applied via
 in their own families through the same three roles — see *Languages and type
 roles* at the end of this section.
 
+**Accent faces are script-native, not a Latin italic.** The coloured word in a
+headline renders in **Noto Nastaliq Urdu** in Persian and **Noto Kufi Arabic** in
+Arabic (`--font-accent-fa` / `--font-accent-ar`, wired to `--font-accent` under
+`html[lang]`). Both are display scripts, both drop the italic slant (a
+synthesised oblique breaks cursive letterforms) and both keep the iridescent
+ramp. If you add a locale, pick a *display* script for its accent — a text face
+renders like a fallback.
+
 **Custom utilities in `globals.css`:** `kicker`, `display-type`, `serif-accent`,
 `iridescent-text`, `glass`, `hairline-t`, `hairline-b`.
 **Layers:** `.grain`, `.aurora`, `.grid-pattern` + `.gridlines` (fixed) /
@@ -279,6 +292,10 @@ the DevTools protocol works well and is how the last session verified this):
 - `getComputedStyle(document.body).fontFamily` starts with the locale's family
   (Vazirmatn / Noto Sans Arabic), and `document.fonts` shows it as loaded. If the
   family is missing from the CSS, the page silently falls back to a system font.
+- The accent face is the one that actually clips: measure **real ink** with
+  `ctx.measureText().actualBoundingBoxAscent/Descent` against the `.reveal-mask`
+  box, using a zero-height `inline-block` probe to find each baseline. Comparing
+  element boxes instead will tell you a lie — see §8.14.
 
 ### Environment gotchas (learned the hard way — do not re-learn these)
 
@@ -290,6 +307,7 @@ the DevTools protocol works well and is how the last session verified this):
 | Git prints progress to stderr | PowerShell surfaces it as red `NativeCommandError` text. Read `$LASTEXITCODE` to judge success; exit 0 means it worked. |
 | Editor tool rejects edits > ~6000 chars | Split into create + append-with-anchor edits. |
 | `LayoutProps<"/">` type not found in `tsc` | It only exists after Next generates its route types. Type layout props explicitly instead. |
+| A media query read during render breaks hydration | It is a *tree* mismatch when the component renders a different structure, and React throws `Minified React error #418`. Branch on reduced motion only through `usePrefersReducedMotion()` (`components/Reveal.tsx`), which carries a server snapshot — see §8.15. |
 
 ### React Compiler lint rules (Next 16 / eslint-config-next)
 
@@ -373,6 +391,46 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
     exercise the layout (same line counts, same emphasis words), but nobody has
     proof-read it as a native speaker. Treat it as a first pass — see the status
     board.
+14. **The masked reveal opens its window wider than it used to, and each script
+    asks for a different amount.** The mask is `overflow: hidden`, so whatever ink
+    overflows the line box is cut off — and measured with a canvas ink box, that
+    was real: ~2 px of a Latin italic descender, 2.8 px of Kufi ink in Arabic, and
+    up to **36 px (0.48em) of Nastaliq ascenders** in Persian on `خسته‌کننده`.
+    Each locale now gets the headroom it needs, and every rule pairs `padding`
+    with an equal, opposite `margin`, so the window grows while the **line itself
+    does not move** — the heading metrics are byte-identical to the Latin ones:
+
+    | Selector | top | bottom (net flow) |
+    | --- | --- | --- |
+    | `.reveal-mask` | `0.06em` | `0.12em` with `margin-bottom: -0.06em` → `0.06em` |
+    | `html[dir="rtl"] .reveal-mask` | – | `0.36em` with `margin-bottom: -0.06em` → `0.3em` |
+    | `html[lang="fa"] .reveal-mask` | `0.6em` | `0.58em` with `margin-bottom: -0.06em` → `0.52em` |
+    | `html[lang="ar"] .reveal-mask` | `0.3em` | inherited |
+
+    Do not "tidy" those negative margins away: deleting one silently adds or
+    removes vertical space in that locale's headings. If you change an accent
+    face or its size, re-measure before trusting it — a display script's ascent is
+    not predictable from its em box.
+
+15. **The gallery's reduced-motion branch is a different *tree*, which is why it
+    cannot use `useReducedMotion`.** `components/Showcase.tsx` renders either a
+    scroll-scrubbed 3D track or a static two-column grid. `motion`'s
+    `useReducedMotion()` resolves the media query during the first client render —
+    which the server cannot know about — so React reported a hydration error
+    (#418) and regenerated the section on the client, every load, for
+    reduced-motion visitors. `usePrefersReducedMotion()` in
+    `components/Reveal.tsx` reads the same query through `useSyncExternalStore`
+    with an explicit server snapshot, so hydration keeps the server's tree and the
+    grid arrives one render later. Verified in dev mode: the error is present with
+    the motion hook and gone with the store hook. It only bites when the
+    *structure* changes — `Work.tsx` uses the plain `prefersReducedMotion()` util
+    for a style-only difference, which React patches silently (§10.12).
+16. **The gallery's previews are not screenshots.** `components/SiteFrame.tsx`
+    draws each client's site in real DOM — its own copy, container-unit type and
+    its accent — so the gallery adds no assets and no network requests, and it
+    stays localised and readable by a screen reader in all three languages. If
+    real photography ever lands (§10.1), it belongs *inside* the frame's viewport
+    area, behind the chrome and the caption strip.
 
 ### Placeholders the human must supply
 
@@ -418,6 +476,9 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
 | 9 | WebGPU renderer path | Three.js/TSL alternative for capable browsers | Only if it degrades cleanly; see Codrops TSL experiments |
 | 10 | Native-speaker pass on the fa/ar copy | The dictionaries are machine-drafted, not proof-read | Read `lib/dictionaries/fa.ts` and `ar.ts` end to end; keep every `emphasis` an exact substring |
 | 11 | Locale switcher in the footer | The switcher is only in the nav today | Same component, pass `locale` + `ui.language.label`; `Footer` already has `site` |
+| 12 | Move `Work.tsx` onto `usePrefersReducedMotion` | It is the last place that resolves a media query during the first client render | Style-only today, so React patches it silently — but it is the same trap as §8.15, one branch away from becoming a real error |
+| 13 | Let the gallery frames open the case studies | A frame is currently only a picture; the caption CTA goes to `#contact` | Needs §10.2 first: wrap `SiteFrame` in a link to `/work/[slug]` and let the front frame own the clickable layer, not all four |
+| 14 | A nav entry for the gallery | It is reachable only by scrolling past Work and from the footer's Explore column | At 1024 px the desktop nav has **101 px** of slack and a seventh item needs ~93 px. Re-measure before adding one, and never at 1440 only — the binding width is exactly 1024 |
 
 ---
 
@@ -616,6 +677,135 @@ one build to learn, and moving the boundary down a level restored `● /en`, `/f
 layout-true, but unproof-read, so §10.10 is the honest next step (`site.email`,
 the dummy socials and the illustrative case studies still need the human too).
 Everything else in the backlog is optional polish. The repository is green.
+
+### 2026-09-13 · Buffy (session 5) · two founders + script-native accent faces
+
+**What I was doing.** Two human requests: (1) Alireza Naghavi is a founder too and
+must lead the team grid, and (2) the coloured words in Persian and Arabic should
+use something cooler than the text faces they had.
+
+**What I did.**
+
+- **Founders (content only).** `team.members` in all three dictionaries: Alireza
+  Naghavi moved to position 0 with `role: "Founder & Lead Engineer"`
+  (`مؤسس مشترک و مهندس ارشد` / `المؤسّس الشريك والمهندس الرئيسي`), Abbas Vaziri to
+  position 1 as `Founder` (`مؤسس مشترک` / `المؤسّس الشريك`). Both bios now say
+  they co-founded the studio, and the old wording that made Abbas the sole
+  founder is gone. Accents still alternate violet → lime → violet → cyan, so no
+  two horizontally adjacent cards share one.
+- **Accent faces.** `app/[locale]/layout.tsx` adds two more families,
+  `Noto_Nastaliq_Urdu` (`--font-accent-fa`) and `Noto_Kufi_Arabic`
+  (`--font-accent-ar`), replacing the Naskh that session 4 shipped. `globals.css`
+  points `--font-accent` at them under `html[lang]`, drops only the italic slant
+  and keeps the gradient, sizes and every effect. Persian accent is `1.14em`,
+  Arabic `1.06em` — Nastaliq reads small at the same nominal size.
+
+**The bug this surfaced.** Nastaliq is a cascading script: its ascenders climb
+well past the line box, and the masked reveal is `overflow: hidden`. Measuring the
+real ink (Chrome's `actualBoundingBoxAscent/Descent`, with a zero-height
+inline-block to locate each baseline) showed `خسته‌کننده` losing **36 px** off the
+top — a sliced letter in a headline, not a rounding wobble. The same measurement
+found 2.8 px in Arabic and, in English, the 2 px Latin descender nick that had
+been there since session 1 without anyone noticing. Fixed with per-locale mask
+headroom where every `padding` is paired with an equal, opposite `margin`, so the
+window grows and **the text does not move a pixel** — §8.14 has the table and a
+warning not to "tidy" those negative margins away.
+
+**Verification.**
+
+- `npx tsc --noEmit` — silent.
+- `npm run lint` — silent.
+- `npm run build` — `Compiled successfully`; `● /en`, `/fa`, `/ar` still
+  prerendered, `ƒ /[locale]/[...rest]`, `proxy` active.
+- Status matrix on `next start`: `/` 200 · `/fa` 200 · `/ar` 200 · `/en` 308 ·
+  `/nope` 404 · `/fa/nope` 404 · `/ar/nope` 404 · sitemap / robots / icon 200.
+- SSR copy: Alireza first and both founder roles present, in that order, in all
+  three locales (grepped out of the served HTML, not just the source).
+- Headless Chrome over CDP at **390 / 768 / 1440 px** × 3 locales: the accent runs
+  render in `Noto Nastaliq Urdu` / `Noto Kufi Arabic` / `Instrument Serif` with
+  `document.fonts.check` true; **0 of 33 masked accent runs clipped** (worst
+  clearance now +3.3 px above, +0.9 px below); zero horizontal overflow; no
+  console errors.
+
+**Correction to session 4's log.** Its glyph-ink check compared element boxes
+rather than real ink and so reported "nothing is clipped"; the canvas-ink method
+above is the trustworthy one. Re-measure with it after any accent-face or
+accent-size change.
+
+**Next agent.** Same as before — the fa/ar copy still wants a native reader, and
+nothing is committed from this session. The repository is green.
+
+### 2026-09-13 · Buffy (session 6) · the gallery — a 3D wall of the work
+
+**What I was doing.** Human request: a modern gallery for showcasing the studio's
+sites, "it can be 3d or with GSAP or anything but the design should be
+supercoll", then commit and push. The technique was mine to choose.
+
+**The design decision, and why.** A hand-built **scroll-scrubbed 3D wall**, not a
+third WebGL canvas. The site already ships two canvases and a third would have
+bought depth at the price of the one thing this section needs most: legible,
+localised, screen-readable *text*. CSS 3D keeps the four previews as real DOM, so
+they render in Geist, Vazirmatn and Noto Sans Arabic (and their accent faces)
+without a texture pipeline, stay translatable, stay in the SSR payload, and cost
+no extra 3D dependency. The frames are drawn, never fetched — §8.16.
+
+**What I did.**
+
+- `components/Showcase.tsx` — a tall track (`100svh + 62vh` per slot) around a
+  sticky viewport. Scroll progress fans out into **one `useTransform` per frame**
+  (sideways 58% of its own width, 260 px back, 22° turned in), so the wall travels
+  on the compositor and nothing re-renders. Cursor parallax leans the room ~3°,
+  an accent wash cross-fades to the accent of the frame in front, and a caption
+  strip carries what scrolling cannot: index, client, sector, dots and the CTA.
+- `components/SiteFrame.tsx` — the preview: browser chrome, a generated domain,
+  the project's headline, two metrics, a stack pill, a cropped ghost index. Sized
+  entirely in container units (`cqw` inside `clamp()`), so one component is
+  legible at 313 px wide on a phone and at 618 px at the front of the wall.
+- `lib/accents.ts` — the accent → class/colour maps, now shared with `Work.tsx`
+  instead of duplicated; `NAV_OFFSET` moved into `lib/util.ts` for the same
+  reason.
+- RTL without a branch: `--gallery-sign` is `1`, and `-1` under
+  `html[dir="rtl"]` (`globals.css`), multiplied into the horizontal offset and the
+  Y-rotation, so the wall travels the other way in Persian and Arabic.
+- Reduced motion gets the same four previews as a static grid.
+- `gallery` copy in all three dictionaries (+ a footer link; see §10.14 for why
+  it is *not* in the primary nav).
+
+**The bug this surfaced, and the fix.** The reduced-motion branch is a different
+tree, and `motion`'s `useReducedMotion()` resolves the media query during the
+first client render: React threw **#418** and regenerated the gallery on every
+load for reduced-motion visitors. Diagnosed in `next dev` (the minified
+production error names no component), then confirmed by disabling my branch — the
+error vanished, so it was mine and not pre-existing. Fixed with
+`usePrefersReducedMotion()` in `components/Reveal.tsx` via
+`useSyncExternalStore`. Recorded as §8.15 and in the §6 gotchas, because the same
+trap is one branch away in `Work.tsx` (§10.12).
+
+**Verification.** All four steps, the locale matrix, and headless Chrome over CDP
+— the only way to check a scroll-scrubbed scene without eyes on it.
+
+- `npx tsc --noEmit` silent · `npm run lint` silent · `npm run build`
+  `Compiled successfully` with `● /en`, `● /fa`, `● /ar` still prerendered.
+- Status matrix on `next start`: `/` 200 · `/fa` 200 · `/ar` 200 · `/en` 308 ·
+  `/nope` 404 · `/fa/nope` 404 · sitemap / robots 200.
+- SSR copy: `id="gallery"`, the masked heading with its accent run
+  (`hung on <em class="serif-accent">one wall</em>`), the four frames, the four
+  scroll markers, `.gallery-floor`, `--gallery-sign` — in all three dictionaries,
+  with the Persian and Arabic headings matching their `emphasis` field.
+- CDP at **390 / 768 / 1440 px × 3 locales** (9 runs): track sticky, 4 frames,
+  depth ordering correct, the caption in step with the active dot at the start,
+  middle and end of the track, **0 px** of horizontal overflow everywhere, and
+  148–239 px of clearance between the front frame and the caption strip.
+- CDP with `prefers-reduced-motion: reduce`: no sticky track, 4 frames, the static
+  grid, no overflow, **0 console errors and 0 hydration errors** (the same probe
+  reported 1 before the fix).
+- Nav slack measured at 1024/1180/1280/1440 px before deciding against a nav
+  entry: 101 px free at the tightest width, ~93 px needed.
+
+**Next agent.** Nothing about this section needs a follow-up; the honest next step
+is still §10.10 — a native speaker on `fa.ts` and `ar.ts`. This commit carries both
+this session's work and session 5's uncommitted multilingual changes (its log entry
+ends "nothing is committed from this session"; it now is).
 
 
 

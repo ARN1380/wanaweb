@@ -3,9 +3,7 @@
 import { useEffect } from "react";
 import Lenis from "lenis";
 
-import { LENIS_EVENT, prefersReducedMotion } from "@/lib/util";
-
-const NAV_OFFSET = 84;
+import { LENIS_EVENT, NAV_OFFSET, prefersReducedMotion } from "@/lib/util";
 
 /**
  * Lenis-powered inertial scrolling plus smooth anchor navigation.

@@ -7,6 +7,7 @@ import Lab from "@/components/Lab";
 import Manifesto from "@/components/Manifesto";
 import Process from "@/components/Process";
 import Services from "@/components/Services";
+import Showcase from "@/components/Showcase";
 import Stack from "@/components/Stack";
 import Team from "@/components/Team";
 import Testimonials from "@/components/Testimonials";
@@ -48,6 +49,7 @@ export default async function Home({ params }: HomeProps) {
         <Hero hero={dict.hero} marquee={dict.marquee} />
         <Manifesto manifesto={dict.manifesto} stats={dict.stats} />
         <Work projects={dict.projects} />
+        <Showcase gallery={dict.gallery} projects={dict.projects} />
         <Services services={dict.services} />
         <Lab lab={dict.lab} stage={dict.ui.labStage} />
         <Process process={dict.process} />
