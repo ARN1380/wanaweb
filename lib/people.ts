@@ -7,12 +7,21 @@ export const team = {
   body: "No account managers, no telephone game between three agencies. You talk directly to the people writing the code and drawing the artwork.",
   members: [
     {
+      name: "Abbas Vaziri",
+      role: "Founder",
+      initials: "AV",
+      accent: "lime",
+      focus: "Direction · Partnerships · Strategy",
+      bio: "Started WanaWeb on a stubborn belief that craft and speed are not a trade-off. Sets the studio's direction and stays close to every engagement we take on.",
+      links: [],
+    },
+    {
       name: "Alireza Naghavi",
-      role: "Founder & Lead Engineer",
+      role: "Lead Engineer",
       initials: "AN",
       accent: "violet",
       focus: "Next.js · Performance · Architecture",
-      bio: "Started WanaWeb to prove a website can be genuinely fast and genuinely beautiful at the same time. Writes the performance budgets he then has to hit.",
+      bio: "Turns ambitious design into fast, typed systems. Writes the performance budgets he then has to hit.",
       links: [{ label: "GitHub", href: "https://github.com/ARN1380" }],
     },
     {

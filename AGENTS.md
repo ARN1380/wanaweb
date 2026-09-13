@@ -68,7 +68,7 @@ scenes, an editorial design system, and a contact form that hands off to email.
 | 3D Lab | ✅ Done | Torus knot, transmissive glass orbs, instanced halo |
 | Process | ✅ Done | Sticky scroll tracking |
 | Toolkit / Stack | ✅ Done | Four groups |
-| Team | ✅ Done | Six members, generated monogram avatars |
+| Team | ✅ Done | Seven members, generated monogram avatars |
 | Testimonials | ✅ Done | Three quotes, anonymised attribution |
 | Contact form | ✅ Done | Client validation + `mailto:` handoff (no backend) |
 | **Selected Work** | ✅ Done | Four case studies, sticky-stacked cards |
@@ -419,6 +419,34 @@ text. At `0.35` only genuine highlights glow.
 
 **Recorded** as §8.10 so a future agent treats the hero exposure as a legibility
 budget rather than a knob to turn up freely.
+
+### 2026-09-13 · Cline (session 4) · team change
+
+**What I was doing.** Human request: add **Abbas Vaziri as the Founder** of the
+studio.
+
+**What I did.** `lib/people.ts` only — content, no component changes:
+
+- Added **Abbas Vaziri**, `role: "Founder"`, as the first member in the array so
+  he leads the grid. Accent `lime`, initials `AV`.
+- **Retitled Alireza Naghavi** from `"Founder & Lead Engineer"` to
+  `"Lead Engineer"`, and rewrote his bio — the old one began "Started WanaWeb…",
+  which now contradicted Abbas being the founder.
+- Accent distribution is still balanced and no two horizontally adjacent cards
+  share an accent: lime · violet · lime · cyan · violet · cyan · lime.
+
+**Judgement call to confirm with the human:** the request said Abbas is *the*
+founder, so Alireza no longer claims that title. If they are in fact
+co-founders, revert Alireza's `role` to `"Founder & Lead Engineer"` — that is a
+one-line change.
+
+**Layout note.** Seven members in a 3-column grid leaves a single orphan card in
+the last row (3 / 3 / 1). Acceptable, but if the team grows to eight it will
+balance again; adding a ninth would repeat the orphan.
+
+**Verification.** `npx tsc --noEmit` clean · `npm run lint` clean ·
+`npm run build` `Compiled successfully` · smoke test `/` HTTP 200 with
+"Abbas Vaziri" and "Lead Engineer" present in the SSR output.
 
 
 

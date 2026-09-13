@@ -30,7 +30,7 @@ npm run lint     # eslint
 | 3D Lab | `components/Lab.tsx` | Interactive, draggable 3D scene |
 | Process | `components/Process.tsx` | Four phases with sticky scroll tracking |
 | Toolkit | `components/Stack.tsx` | The technologies we actually use |
-| Team | `components/Team.tsx` | Six people, generated portraits from initials |
+| Team | `components/Team.tsx` | Seven people, generated portraits from initials |
 | Signal | `components/Testimonials.tsx` | Partner quotes |
 | FAQ | `components/Faq.tsx` | Accessible accordion, no JS height measuring |
 | Contact | `components/Contact.tsx` | Brief form that composes an email |
