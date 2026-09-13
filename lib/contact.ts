@@ -32,9 +32,9 @@ export const footer = {
     {
       title: "Studio",
       links: [
+        { label: "Selected work", href: "#work" },
         { label: "The studio", href: "#studio" },
         { label: "Services", href: "#services" },
-        { label: "Process", href: "#process" },
         { label: "Team", href: "#team" },
       ],
     },
@@ -42,9 +42,9 @@ export const footer = {
       title: "Explore",
       links: [
         { label: "3D Lab", href: "#lab" },
+        { label: "Process", href: "#process" },
         { label: "Toolkit", href: "#stack" },
-        { label: "Signal", href: "#signal" },
-        { label: "Contact", href: "#contact" },
+        { label: "FAQ", href: "#faq" },
       ],
     },
   ],

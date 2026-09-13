@@ -7,6 +7,7 @@ import { site } from "@/lib/content";
 import Cursor from "@/components/Cursor";
 import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
+import Preloader from "@/components/Preloader";
 import SmoothScroll from "@/components/SmoothScroll";
 
 const geistSans = Geist({
@@ -96,6 +97,8 @@ export default function RootLayout({
 
         <Cursor />
         <SmoothScroll />
+        {/* Mounted after SmoothScroll so its scroll-lock event has a listener. */}
+        <Preloader />
         <Nav />
 
         <div className="relative z-10 flex min-h-full flex-col">

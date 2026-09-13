@@ -25,13 +25,19 @@ npm run lint     # eslint
 | --- | --- | --- |
 | Hero | `components/Hero.tsx` | Masked line reveal over a live WebGL scene |
 | Studio | `components/Manifesto.tsx` | Position, animated counters, three pillars |
+| Selected work | `components/Work.tsx` | Four case studies in sticky-stacked cards |
 | Services | `components/Services.tsx` | Six capability cards |
 | 3D Lab | `components/Lab.tsx` | Interactive, draggable 3D scene |
 | Process | `components/Process.tsx` | Four phases with sticky scroll tracking |
 | Toolkit | `components/Stack.tsx` | The technologies we actually use |
 | Team | `components/Team.tsx` | Six people, generated portraits from initials |
 | Signal | `components/Testimonials.tsx` | Partner quotes |
+| FAQ | `components/Faq.tsx` | Accessible accordion, no JS height measuring |
 | Contact | `components/Contact.tsx` | Brief form that composes an email |
+
+Also included: an intro preloader (`components/Preloader.tsx`, once per session),
+a custom 404 (`app/not-found.tsx`), and generated `robots.txt` / `sitemap.xml`
+(`app/robots.ts`, `app/sitemap.ts`).
 
 ## The 3D work
 
@@ -64,10 +70,12 @@ All copy lives in `lib/`, separate from layout and animation code:
 | File | Contains |
 | --- | --- |
 | `lib/content.ts` | Brand, nav, hero, marquee, stats, manifesto |
+| `lib/projects.ts` | Case studies for the Selected Work section |
 | `lib/work.ts` | Services, process, toolkit, 3D lab copy |
 | `lib/people.ts` | Team members and testimonials |
+| `lib/faq.ts` | FAQ questions and answers |
 | `lib/contact.ts` | Contact form copy and footer |
-| `lib/util.ts` | Helpers (`cn`, `splitEmphasis`, reduced-motion) |
+| `lib/util.ts` | Helpers (`cn`, `splitEmphasis`, `createRandom`, reduced-motion) |
 
 ### Placeholders to replace before launch
 
@@ -79,6 +87,9 @@ All copy lives in `lib/`, separate from layout and animation code:
   for the real team, or delete entries (the grid reflows automatically).
 - Testimonials in `lib/people.ts` are written as anonymous role + company
   attributions; replace them with real, attributable quotes before publishing.
+- **Case studies in `lib/projects.ts` are illustrative.** The client names,
+  metrics and outcomes were written to demonstrate the layout. Replace them with
+  real, permissioned work — or delete entries; the stack reflows automatically.
 
 ## Design system
 

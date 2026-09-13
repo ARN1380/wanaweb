@@ -1,4 +1,5 @@
 import Contact from "@/components/Contact";
+import Faq from "@/components/Faq";
 import Hero from "@/components/Hero";
 import Lab from "@/components/Lab";
 import Manifesto from "@/components/Manifesto";
@@ -7,6 +8,7 @@ import Services from "@/components/Services";
 import Stack from "@/components/Stack";
 import Team from "@/components/Team";
 import Testimonials from "@/components/Testimonials";
+import Work from "@/components/Work";
 import { site } from "@/lib/content";
 
 const structuredData = {
@@ -39,12 +41,14 @@ export default function Home() {
       <main id="main" className="flex flex-col">
         <Hero />
         <Manifesto />
+        <Work />
         <Services />
         <Lab />
         <Process />
         <Stack />
         <Team />
         <Testimonials />
+        <Faq />
         <Contact />
       </main>
     </>

@@ -373,6 +373,39 @@ body {
   border: 0;
 }
 
+/* Concentric rings in the Selected Work panels. */
+.ring-breathe {
+  transform: translate(-50%, -50%);
+  animation: ring-breathe 7s ease-in-out infinite;
+}
+
+@keyframes ring-breathe {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.07);
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------- preloader */
+
+.preloader-curtain {
+  background: var(--ink);
+}
+
+@keyframes preloader-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* ------------------------------------------------- reduced motion / a11y -- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -382,7 +415,8 @@ body {
 
   .grain,
   .marquee-track,
-  .aurora {
+  .aurora,
+  .ring-breathe {
     animation: none !important;
   }
 
