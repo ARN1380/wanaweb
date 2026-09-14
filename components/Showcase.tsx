@@ -66,6 +66,12 @@ function GalleryStage({ gallery, projects }: ShowcaseProps) {
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
 
+  /*
+    `onScreen` gates two things in the scene: whether the render loop runs, and
+    whether the screenshots are fetched at all. They are a few hundred kilobytes
+    each and the gallery sits five sections down, so paying for them at page load
+    would be a real cost to a visitor who never scrolls this far.
+  */
   const stageRef = useRef<HTMLDivElement>(null);
   const onScreen = useInView(stageRef, { amount: 0.05 });
 
@@ -158,8 +164,6 @@ function GalleryStage({ gallery, projects }: ShowcaseProps) {
                   </p>
                   <p className="mt-1 truncate font-mono text-[0.56rem] tracking-[0.16em] text-muted uppercase">
                     {current.sector}
-                    {" · "}
-                    {current.year}
                   </p>
                 </div>
               </div>

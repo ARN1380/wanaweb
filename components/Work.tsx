@@ -60,9 +60,6 @@ function ProjectCard({
               <span className="font-mono text-[0.62rem] tracking-[0.16em] text-muted uppercase">
                 {project.sector}
               </span>
-              <span className="font-mono text-[0.62rem] tracking-[0.16em] text-muted/60 uppercase">
-                {project.year}
-              </span>
             </div>
 
             <div>
@@ -78,23 +75,7 @@ function ProjectCard({
               {project.summary}
             </p>
 
-            <dl className="grid grid-cols-3 gap-4 border-t border-hairline pt-5">
-              {project.results.map((result) => (
-                <div key={result.v}>
-                  <dt className="sr-only">{result.v}</dt>
-                  <dd>
-                    <span className="iridescent-text block text-xl font-semibold tracking-[-0.03em] sm:text-2xl">
-                      {result.k}
-                    </span>
-                    <span className="mt-1 block font-mono text-[0.55rem] leading-relaxed tracking-[0.12em] text-muted uppercase">
-                      {result.v}
-                    </span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 border-t border-hairline pt-5">
               {project.services.map((service) => (
                 <span
                   key={service}

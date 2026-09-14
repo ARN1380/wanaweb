@@ -72,8 +72,9 @@ system, and a contact form that hands off to email.
 | Team | ✅ Done | Seven members, generated monogram avatars |
 | Testimonials | ✅ Done | Three quotes, anonymised attribution |
 | Contact form | ✅ Done | Client validation + `mailto:` handoff (no backend) |
-| **Selected Work** | ✅ Done | Four case studies, sticky-stacked cards |
-| **Site gallery (WebGL room)** | ✅ Done | Real 3D room of the four sites, camera dollied by scroll; screens are runtime canvas textures — see §8.15–8.17 |
+| **Selected Work** | ✅ Done | Four live sites, sticky-stacked cards |
+| **Site gallery (WebGL room)** | ✅ Done | Real 3D room of the four sites, camera dollied by scroll; screens are real screenshots — see §8.15–8.18 |
+| **Real site screenshots** | ✅ Done | `public/shots/` × 4, captured by `scripts/capture-shots.mjs`; wired by `lib/shots.ts` — see §8.18 |
 | **FAQ** | ✅ Done | Accessible accordion |
 | **Intro preloader** | ✅ Done | Once per session, respects reduced motion |
 | **Multilingual routing** | ✅ Done | `/` = English, `/fa`, `/ar`; all three prerendered |
@@ -83,7 +84,8 @@ system, and a contact form that hands off to email.
 | **Custom 404** | ✅ Done | `app/[locale]/[...rest]/not-found.tsx`, localised |
 | **sitemap / robots** | ✅ Done | `app/sitemap.ts` (hreflang), `app/robots.ts` |
 | Persian / Arabic copy review | ⬜ Blocked | Machine-drafted, needs a native speaker — see §8 |
-| Real project photography | ⛔ Out of scope | No image assets by design — see §8 |
+| Project photography | ⬜ Not started | Only raster assets so far are the four captures; real photography per site would go in the same window — see §8.18 |
+| Real brand domains on the frames | ⬜ Not started | The chrome shows `*.vercel.app` deployment hosts because that is what the sites are served from |
 | Contact backend | ⛔ Out of scope | Deliberately client-side only — see §8 |
 | Deployment (Vercel) | ⬜ Not done | Repo pushes fine; no Vercel project linked |
 | Domain + real content | ⬜ Blocked | Needs the human — see §8 "Placeholders" |
@@ -130,8 +132,11 @@ wanaweb/
    │  └─ index.ts        ← getDictionary(locale)
    ├─ util.ts            ← cn, splitEmphasis, createRandom, prefersReducedMotion,
    │                       NAV_OFFSET, setSmoothScrollStopped
-   └─ accents.ts         ← accent → class/colour maps shared by Work and Showcase
-                           setSmoothScrollStopped
+   ├─ accents.ts         ← accent → class/colour maps shared by Work and Showcase
+   └─ shots.ts           ← project id → its screenshot, source URL, displayed host
+├─ public/shots/         ← the gallery's four captures (the only raster assets)
+└─ scripts/
+   └─ capture-shots.mjs  ← headless-Chrome capture; keep in step with shots.ts
 ```
 
 **Data flow:** `getDictionary(locale)` → `app/[locale]/page.tsx` → section
@@ -348,9 +353,12 @@ conventional-prefixed (`feat:`, `fix:`, `docs:`, `perf:`, `refactor:`).
 
 These are **conscious choices**, not oversights. Do not "fix" them without reading this.
 
-1. **No image assets anywhere.** Every visual is CSS, SVG or WebGL — so the repo
-   stays self-contained, has no licensing questions, and nothing blocks the LCP.
-   Case-study imagery and real team photos are the natural next addition.
+1. **Raster assets are limited to the four gallery captures**, at
+   `public/shots/*.jpg` (~870 KB total, fetched only when the gallery is reached —
+   see §8.18). Everything else — every other visual on the site — is still CSS,
+   SVG or WebGL, so the rest of this entry holds: no licensing questions, and
+   nothing on the critical path. Real team photos remain the natural next
+   addition.
 2. **Both canvases have an opaque `#050506` background.** This is required: bloom
    adds light to transparent pixels, which the browser then discards (alpha 0), so
    the glow would be invisible. The hero instead layers gridlines and a `noise-veil`
@@ -441,15 +449,16 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
     the motion hook and gone with the store hook. It only bites when the
     *structure* changes — `Work.tsx` uses the plain `prefersReducedMotion()` util
     for a style-only difference, which React patches silently (§10.12).
-16. **The gallery's screens are not screenshots.** `components/three/siteTexture.ts`
-    paints each client's site into a canvas — bezel, chrome, domain, headline,
-    metrics, RTL-aware — and that canvas is the texture on the 3D panel, so the
-    gallery adds no assets and no network requests. The same mockup exists as real
-    DOM in `components/SiteFrame.tsx`, which is what the reduced-motion grid
-    renders: crisp text, real copy, screen-readable. The two are deliberate twins,
-    so **change both** when the mockup's design changes. If real photography ever
-    lands (§10.1), it belongs inside the screen's viewport area, behind the chrome
-    and the caption strip, in both twins.
+16. **The gallery's screens are real screenshots.** Each of the four frames shows
+    a capture of a live site, taken from the deployment by
+    `scripts/capture-shots.mjs`, stored in `public/shots/` and named by
+    `lib/shots.ts`. `components/three/siteTexture.ts` frames the capture as a
+    screen — device bezel, chrome, the deployment's real address — and the same
+    frame exists as real DOM in `components/SiteFrame.tsx`, which is what the
+    reduced-motion grid renders: real `<img>` pixels and a localised `alt`. The
+    two are deliberate twins, so **change both** when the frame's design changes.
+    A project with no capture renders the accent wash behind the chrome instead
+    of an empty window, so a missing file degrades rather than breaking the wall.
 17. **R3F's container measurement latches, and the gallery guards against it.**
     Measured on this site: in the Persian page the gallery canvas was sized
     **1425×1001 inside a 1425×900 box** — and at that moment so were the hero's
@@ -460,18 +469,51 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
     correct height while the canvas kept the wrong one. `ViewportGuard` in
     `GalleryScene.tsx` therefore compares the **buffer itself** — ground truth —
     against the host box each frame and corrects `gl` and the store; it settles in
-    a frame or two. The hero and lab canvases carry the same latent bug (§10.15).
+    a frame or two. The hero and lab    canvases carry the same latent bug (§10.15).
+
+18. **The gallery's screenshots are the repository's only raster assets, and they
+    are fetched late on purpose.** Four JPEGs, ~870 KB in total, live in
+    `public/shots/` and are named by `lib/shots.ts` (which pairs each project id
+    with its image, its deployment URL and the address the chrome shows). They are
+    captured — never hand-made — by `scripts/capture-shots.mjs`, which drives
+    headless Chrome over the DevTools protocol: it warms the page by scrolling it
+    once so lazy content exists, waits for the webfonts, captures past the fold,
+    and re-encodes at the 964 px the panel's screen area needs.
+
+    Three traps, all paid for once already:
+
+    - **A WebGL page renders to a flat frame in a browser with no GPU and reports
+      no error while doing it.** The portfolio is 100 % canvas, so its shot came
+      back a single uniform colour and looked like a success. The script therefore
+      measures every capture (ink, spread, detail) and warns when one is flat —
+      and it retries once, because the portfolio was still undrawn at three
+      seconds and fully drawn at ten.
+    - **`captureBeyondViewport` blanks a WebGL canvas**: re-rendering the page
+      into a larger surface hands back the clear colour. The script only asks for
+      it when the page is genuinely taller than the window.
+    - **Do not fetch them at page load.** `GalleryScene` builds its textures on
+      the scene's `active` signal, so the downloads start when the wall scrolls
+      into view; nothing about the gallery costs a visitor who never gets there.
+      Walking away and back re-slices the canvases from images the browser has
+      cached, which is cheaper than a second piece of state to avoid.
+
+    A stale capture is a stale claim: re-run the script when a site changes.
 
 ### Placeholders the human must supply
 
 - `site.url` (`https://wanaweb.studio`) — used as `metadataBase` and in JSON-LD.
 - `site.email` (`hello@wanaweb.studio`) — used by the contact form and footer.
 - `site.socials` — X / LinkedIn / Dribbble URLs are dummies.
-- Team members (`lib/people.ts`), testimonials (same file).
+- Team members (`team.members`) and testimonials (`testimonials.items`), in every
+  dictionary — the files were folded into `lib/dictionaries/` in session 5.
 - A native-speaker review of `lib/dictionaries/fa.ts` and `ar.ts` — the tone, the
   pricing bands and the testaments all deserve a real reader before launch.
-- Case studies (`lib/dictionaries/en.ts`, `projects.items`) — client names, metrics
-  and outcomes are illustrative.
+- `lib/shots.ts` — the frames' address bars show `*.vercel.app` deployment hosts,
+  because those are where the sites are served from today. Update `url`, `host`
+  and the captures when real domains land.
+- Anything measured: the four projects describe what each live site *is* and claim
+  nothing about delivery that has not been measured. The invented metrics and
+  years are gone rather than guessed at — add real figures when you have them.
 
 ---
 
@@ -495,7 +537,7 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
 
 | # | Item | Why | Hint |
 | --- | --- | --- | --- |
-| 1 | Real case-study imagery | Currently the work cards use generated gradients only | Add `next/image` with local files in `public/`, then set `images.formats` in `next.config.ts`. Keep them out of the critical path. |
+| 1 | Photography inside each frame's window | The four captures are whole-page screenshots; a studio with real clients wants photographs of the work | The window is already an `<img>` in `SiteFrame.tsx` and a `drawImage` in `siteTexture.ts` — swap the source in both, behind the chrome, and keep `public/shots/` for the fallback. Keep them out of the critical path. |
 | 2 | Case-study detail pages | `/work/[slug]` would deepen the IA | `projects` already has `id` + `slug`-ready data in `lib/projects.ts` |
 | 3 | Dynamic OG image | Social shares currently fall back to a plain card | `app/opengraph-image.tsx` with `next/og` `ImageResponse` |
 | 4 | Deploy to Vercel | Repo is push-ready but not hosted | `vercel link` then `vercel --prod`; no env vars required |
@@ -510,7 +552,8 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
 | 13 | Let the gallery frames open the case studies | A frame is currently only a picture; the caption CTA goes to `#contact` | Needs §10.2 first: wrap `SiteFrame` in a link to `/work/[slug]` and let the front frame own the clickable layer, not all four |
 | 14 | A nav entry for the gallery | It is reachable only by scrolling past Work and from the footer's Explore column | At 1024 px the desktop nav has **101 px** of slack and a seventh item needs ~93 px. Re-measure before adding one, and never at 1440 only — the binding width is exactly 1024 |
 | 15 | Guard the hero and lab canvases the same way | §8.17 is a framework-level latch, not a gallery bug — those two canvases are unguarded | Reuse `ViewportGuard`; it is a few lines and needs its own canvas's `gl` and `setSize`. Verify by comparing `canvas.height` with the host's `clientHeight` in each locale |
-| 16 | Real textures for the gallery screens | §8.16's screens are drawn; a studio with real work wants photographs | Same seam as §10.1: an `ImageBitmap` from `public/` swapped for the generated canvas, keeping `siteTexture.ts`'s geometry |
+| 16 | Inner scroll inside the frames | Requested: each screen should scroll to its own page, so a visitor can see the whole site, not just its top | In progress and **unpushed** — see the 2026-09-14 session-9 log entry for the approach and what is still open |
+| 17 | Re-capture before any launch | A stale screenshot is a stale claim; the sites change under it | `node scripts/capture-shots.mjs`, then eyeball the four files in `public/shots/` — the script's statistics prove a frame is not blank, not that it is composed well |
 
 ---
 
@@ -973,6 +1016,87 @@ constants at the top of `GalleryObjects.tsx` and in `CameraRig`.
 
 **Next agent.** §10.15 is the honest follow-up (the other two canvases still carry
 the latch). Everything else here is taste.
+
+### 2026-09-14 · Buffy (session 9) · real screenshots — and the showcase stops pretending
+
+**What I was doing.** The human supplied the URLs of four real live sites and asked
+for screenshots of them in the showcase section, then for those screens to be
+scrollable inside the 3D room. Asked which way to take it, they chose to **rewrite
+the showcase copy to the real sites** and to drive the inner scroll by **wheel over
+the panel**, with the instruction to push only the first part.
+
+**The captures.** `scripts/capture-shots.mjs` — new, dependency-free, and the only
+way these images should ever be produced. It launches headless Chrome, warms each
+page by scrolling it once so lazy content exists, waits for the webfonts, captures
+past the fold and re-encodes at the 964 px the panel's screen needs:
+`portfolio-arn` 29 KB · `godot-cafe` 398 KB · `digital-mixology` 138 KB ·
+`bakery-manfi` 291 KB. `--text` prints each page's own copy, which is where the
+dictionary rewrite came from rather than from invention.
+
+Three traps it now handles, each paid for once: a WebGL page renders to a **flat
+frame** in a browser with no GPU and reports no error (§8.18);
+`captureBeyondViewport` **blanks** a WebGL canvas; and the portfolio was still
+undrawn at three seconds and fully drawn at ten. The script therefore measures
+every shot (ink, spread, detail), retries once, warns when a frame looks flat, and
+exits non-zero — the earlier flat capture of the portfolio looked exactly like a
+success until it was measured.
+
+**The copy.** `projects.items` in all three dictionaries now describes the real
+sites — an ARN portfolio that is one viewport tall, Café Godot (Valiasr St, opened
+1995), Kafe Nooshin (halal drinks bar with its own mixer) and Minus One (sourdough,
+Karim Khan St) — with everything read off the live pages: their own headlines,
+their own sections as the chip lists, and only technology I could verify
+(`Next.js` everywhere; `three.js r182` read out of the portfolio's canvas;
+`Tailwind` only where the CSS carries `--tw-`). **The invented `results` metrics
+and the invented `year` are gone** rather than replaced with guesses, so the Work
+cards and the gallery caption lost those rows and the frames no longer draw fake
+metrics. `gallery.body` said "there is not a single screenshot in this section" —
+that is now the opposite of true, and both `projects.body` and `gallery.body` were
+rewritten in all three locales.
+
+**The frames.** The screenshot went into the existing device frame: real DOM in
+`components/SiteFrame.tsx` (a localised `alt`, `next/image`), and in
+`components/three/siteTexture.ts` the window is now `drawImage` of the capture with
+the chrome drawn over it and the **deployment's own address** in the address bar —
+a frame must not claim to be `halcyon.com` while showing someone else's site. A
+project with no capture falls back to the accent wash, so a missing file degrades
+instead of leaving a hole. `lib/shots.ts` is the new manifest; the script and it
+must be kept in step.
+
+One deliberate change beyond the ask: `GalleryScene` now builds its textures on the
+scene's `active` signal, so the ~870 KB of captures are fetched when the wall is
+reached and never at page load (§8.18).
+
+**Verification.**
+
+- `npx tsc --noEmit` silent · `npm run lint` silent · `npm run build`
+  `Compiled successfully`, with `● /en`, `● /fa`, `● /ar` still prerendered.
+- Route matrix unchanged: `/`, `/fa`, `/ar` 200 · `/en` 308 · `/nope`, `/fa/nope`,
+  `/ar/nope` 404 · sitemap / robots 200 · all four `/shots/*.jpg` 200 and byte-exact.
+- SSR copy per locale: the language and direction correct, the real project names
+  in each language, and the new `gallery.body` present in all three.
+- Headless Chrome over CDP, inside the gallery track, in en/fa/ar: the panel's
+  drawing buffer **equals its box** (1440×900) in all three — the earlier fa/ar
+  readings of 1001 and 700 were the render loop frozen *after* leaving the track,
+  not a live bug — all four captures requested, the caption naming the frame in
+  front in the right language, **0 px** of horizontal overflow, and **0** console
+  or hydration errors (only three.js's own `Clock` deprecation warnings). The hero
+  and lab canvases still show the §8.17 latch; that is pre-existing and §10.15.
+- `prefers-reduced-motion`: no canvas and no track, four real `<img>` frames through
+  the Next image optimizer with a localised `alt` (`علیرضا نقوی — پورتفولیویی به
+  قدِ یک قاب`), 0 px overflow, 0 errors.
+- **What I could not verify: I have no eyes on the captures.** The statistics prove
+  each one is a real, non-blank render; whether a shot crops nicely in the frame is
+  a judgement the human has to make — look at `public/shots/` before publishing.
+
+**Not pushed.** The second half of the request — inner scroll inside the frames, by
+wheel over the panel, with the scroll handed back to the page at the end of the
+content — is in progress and unpushed at the human's instruction. See §10.16.
+
+**Next agent.** Replace the two remaining invented things once the human supplies
+them: the deployment hosts in the chrome (`lib/shots.ts`) and the fa/ar proof-read
+(§10.10). Re-capture whenever a site changes (§10.17) — none of these frames is a
+claim about today's design otherwise.
 
 
 

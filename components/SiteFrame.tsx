@@ -1,5 +1,8 @@
-import { accentColor, accentWash } from "@/lib/accents";
+import Image from "next/image";
+
+import { accentColor } from "@/lib/accents";
 import type { Project } from "@/lib/dictionaries/types";
+import { shotFor } from "@/lib/shots";
 import { cn } from "@/lib/util";
 
 type SiteFrameProps = {
@@ -8,16 +11,19 @@ type SiteFrameProps = {
 };
 
 /**
- * A website mockup, drawn entirely with type and CSS.
+ * A real screenshot of a live site, framed as a browser window.
  *
- * This repository ships no image assets, so every preview here is assembled
- * from the project's own copy and accent rather than a screenshot. Type is
- * sized in container units, which is what keeps the mockup legible both as a
- * card in the reduced-motion grid and as a 40 rem frame at the front of the 3D
- * wall — the same markup, scaled by its own width.
+ * `components/three/siteTexture.ts` draws the same frame into the gallery's
+ * texture — this is its DOM twin, and the one the reduced-motion grid renders:
+ * real `<img>` pixels, selectable text in the chrome, and a screenshot the
+ * screen reader can name. **Change both** when the frame's design changes.
+ *
+ * A project with no capture yet falls back to the accent wash rather than an
+ * empty window, so an un-captured site degrades instead of looking broken.
  */
 export default function SiteFrame({ project, className }: SiteFrameProps) {
   const accent = accentColor[project.accent];
+  const shot = shotFor(project.id);
 
   return (
     <div
@@ -39,7 +45,7 @@ export default function SiteFrame({ project, className }: SiteFrameProps) {
         </span>
 
         <span className="min-w-0 flex-1 truncate rounded-full border border-hairline bg-ink/70 px-[2.5cqw] py-[0.7cqw] text-center font-mono text-[clamp(0.5rem,1.45cqw,0.7rem)] text-muted">
-          {project.id}.com
+          {shot?.host ?? project.client}
         </span>
 
         <span
@@ -49,72 +55,28 @@ export default function SiteFrame({ project, className }: SiteFrameProps) {
         />
       </div>
 
-      {/* The page itself. */}
-      <div className="relative aspect-[16/10] overflow-hidden">
-        <div
-          aria-hidden="true"
-          className={cn(
-            "absolute inset-0 bg-gradient-to-br",
-            accentWash[project.accent],
-          )}
-        />
-        <div aria-hidden="true" className="grid-pattern absolute inset-0 opacity-30" />
-
-        <div className="relative flex h-full flex-col p-[5cqw]">
-          {/* Mock site nav: the client's mark, then three skeleton links. */}
-          <div className="flex items-center justify-between gap-[4cqw]">
-            <span className="truncate font-mono text-[clamp(0.5rem,1.7cqw,0.75rem)] tracking-[0.2em] text-bone/80 uppercase">
-              {project.client}
-            </span>
-            <span aria-hidden="true" className="flex shrink-0 gap-[2.2cqw]">
-              {[4.5, 3.2, 5].map((width, index) => (
-                <span
-                  key={index}
-                  className="h-[0.7cqw] rounded-full bg-bone/25"
-                  style={{ width: `${width}cqw` }}
-                />
-              ))}
-            </span>
-          </div>
-
-          <p className="display-type mt-[5.5cqw] max-w-[88%] text-[clamp(0.85rem,5.2cqw,2.1rem)] text-bone">
-            {project.title}
-          </p>
-
-          <div className="mt-auto flex items-end justify-between gap-[3cqw]">
-            <dl className="flex shrink-0 gap-[4cqw]">
-              {project.results.slice(0, 2).map((result) => (
-                <div key={result.v}>
-                  <dt className="sr-only">{result.v}</dt>
-                  <dd>
-                    <span className="iridescent-text block text-[clamp(0.7rem,3cqw,1.3rem)] font-semibold tracking-[-0.02em]">
-                      {result.k}
-                    </span>
-                    <span className="mt-[0.8cqw] block font-mono text-[clamp(0.4rem,1.25cqw,0.6rem)] tracking-[0.12em] text-muted uppercase">
-                      {result.v}
-                    </span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-
-            {/* The mockup's own CTA — the first technology, on the accent. */}
-            <span
-              className="hidden shrink-0 rounded-full px-[3cqw] py-[1.3cqw] font-mono text-[clamp(0.45rem,1.35cqw,0.65rem)] tracking-[0.14em] uppercase @[24rem]:inline-flex"
-              style={{ backgroundColor: accent, color: "#050506" }}
-            >
-              {project.stack[0]}
-            </span>
-          </div>
-        </div>
-
-        {/* Ghost index, cropped by the frame the way a real page crops. */}
-        <span
-          aria-hidden="true"
-          className="iridescent-text pointer-events-none absolute end-[-1cqw] -bottom-[7cqw] text-[32cqw] leading-none font-semibold opacity-[0.08]"
-        >
-          {project.index}
-        </span>
+      {/*
+        The page itself. A capture is a whole page tall, so the window shows its
+        top edge — the same crop the 3D panel makes.
+      */}
+      <div className="relative aspect-[16/10] overflow-hidden bg-ink">
+        {shot ? (
+          <Image
+            src={shot.src}
+            alt={`${project.client} — ${project.title}`}
+            fill
+            sizes="(min-width: 640px) 45vw, 92vw"
+            className="object-cover object-top"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `linear-gradient(135deg, ${accent}4d, transparent 60%)`,
+            }}
+          />
+        )}
       </div>
     </div>
   );

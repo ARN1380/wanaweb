@@ -17,9 +17,10 @@ import {
   PANEL_STEP,
   SitePanel,
 } from "@/components/three/GalleryObjects";
-import { drawSitePanel, type TextureFonts } from "@/components/three/siteTexture";
+import { drawSitePanel } from "@/components/three/siteTexture";
 import { accentColor } from "@/lib/accents";
 import type { Project } from "@/lib/dictionaries/types";
+import { shotFor } from "@/lib/shots";
 
 type GallerySceneProps = {
   projects: readonly Project[];
@@ -28,7 +29,10 @@ type GallerySceneProps = {
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
   front: number;
-  /** Freezes the render loop when the gallery is off screen. */
+  /**
+   * True while the gallery is on screen: gates the render loop *and* the fetch
+   * of the screenshots, so nothing is downloaded until the wall is reached.
+   */
   active: boolean;
 };
 
@@ -39,17 +43,40 @@ type SceneState = {
 };
 
 /**
- * The site "screenshots" are drawn once, after the webfonts are ready.
+ * Load one site's screenshot, or resolve to null if it will not decode.
  *
- * Drawing before the fonts land would bake the fallback face into the texture
- * for the whole session, so this waits — and the Persian and Arabic galleries
- * wait for Vazirmatn and Noto Sans Arabic, which is why they are worth a frame
- * of empty room rather than a flash of the wrong script.
+ * A frame with no capture still renders — as the accent wash behind real
+ * chrome — so a missing file degrades instead of leaving a hole in the wall.
  */
-function useSiteTextures(projects: readonly Project[]): SceneState | null {
+function loadShot(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
+/**
+ * The panels are drawn once the screenshots have arrived and the webfonts are
+ * ready — the chrome's address is type, and drawing before the fonts land would
+ * bake the fallback face into the texture for the whole session.
+ *
+ * Nothing is fetched until the gallery is on screen, and the built textures are
+ * kept in state, so scrolling away and back does not throw the room away. Coming
+ * back re-slices the canvases from images the browser has already cached, which
+ * is a handful of milliseconds and not worth a second piece of state to avoid.
+ */
+function useSiteTextures(
+  projects: readonly Project[],
+  active: boolean,
+): SceneState | null {
   const [scene, setScene] = useState<SceneState | null>(null);
 
   useEffect(() => {
+    if (!active) return;
+
     let cancelled = false;
     let built: CanvasTexture[] = [];
 
@@ -57,22 +84,34 @@ function useSiteTextures(projects: readonly Project[]): SceneState | null {
       await document.fonts.ready;
 
       const root = getComputedStyle(document.documentElement);
-      const fonts: TextureFonts = {
-        body: root.getPropertyValue("--font-body").trim() || "sans-serif",
-        label: root.getPropertyValue("--font-label").trim() || "monospace",
-      };
+      const label =
+        root.getPropertyValue("--font-label").trim() || "monospace";
       const rtl = document.documentElement.dir === "rtl";
 
-      built = projects.map((project) => {
+      const images = await Promise.all(
+        projects.map((project) => {
+          const shot = shotFor(project.id);
+          return shot ? loadShot(shot.src) : Promise.resolve(null);
+        }),
+      );
+      if (cancelled) return;
+
+      built = projects.map((project, index) => {
+        const shot = shotFor(project.id);
         const texture = new CanvasTexture(
-          drawSitePanel(project, rtl ? "rtl" : "ltr", fonts),
+          drawSitePanel(
+            images[index],
+            shot?.host ?? "",
+            accentColor[project.accent],
+            label,
+          ),
         );
         texture.colorSpace = SRGBColorSpace;
         texture.anisotropy = 4;
         return texture;
       });
 
-      if (!cancelled) setScene({ textures: built, sign: rtl ? -1 : 1 });
+      setScene({ textures: built, sign: rtl ? -1 : 1 });
     };
 
     void build();
@@ -81,7 +120,7 @@ function useSiteTextures(projects: readonly Project[]): SceneState | null {
       cancelled = true;
       built.forEach((texture) => texture.dispose());
     };
-  }, [projects]);
+  }, [projects, active]);
 
   return scene;
 }
@@ -187,7 +226,7 @@ export default function GalleryScene({
   front,
   active,
 }: GallerySceneProps) {
-  const scene = useSiteTextures(projects);
+  const scene = useSiteTextures(projects, active);
   const focusRef = useRef(0);
   const count = projects.length;
 

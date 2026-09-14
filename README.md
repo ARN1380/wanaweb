@@ -60,7 +60,7 @@ The site is a single page, prerendered once per language:
 | --- | --- | --- |
 | Hero | `components/Hero.tsx` | Masked line reveal over a live WebGL scene |
 | Studio | `components/Manifesto.tsx` | Position, animated counters, three pillars |
-| Selected work | `components/Work.tsx` | Four case studies in sticky-stacked cards |
+| Selected work | `components/Work.tsx` | Four live sites in sticky-stacked cards |
 | The gallery | `components/Showcase.tsx` | WebGL room of the four sites, walked by scroll |
 | Services | `components/Services.tsx` | Six capability cards |
 | 3D Lab | `components/Lab.tsx` | Interactive, draggable 3D scene |
@@ -77,9 +77,10 @@ a localised 404 (`app/[locale]/[...rest]/not-found.tsx`), and generated
 
 ## The 3D work
 
-Three independent WebGL scenes, all generated entirely in the browser. There are
-**no model files and no downloaded textures** anywhere in this repository — the
-gallery's screens included, which are painted into canvas textures at runtime.
+Three independent WebGL scenes. There are **no model files** anywhere in this
+repository and every texture is generated in the browser — except the gallery's
+four screenshots, which are real captures of the studio's live sites (see
+**Screenshots** below).
 
 - **`components/three/HeroScene.tsx`** — an icosahedron displaced on the GPU by
   two octaves of 3D simplex noise (`components/three/shaders.ts`), shaded with an
@@ -105,12 +106,11 @@ it as lit screens, which the page's own scroll walks you past.
 - One tall track (`100svh + 62vh per site`) maps scroll distance onto the camera's
   travel. The caption strip, the dots and the scroll markers work exactly as they
   did before the renderer changed.
-- Two renderers, one design: `components/three/siteTexture.ts` draws each site
-  into a canvas texture for the 3D screens — bezel, browser chrome, domain,
-  headline, metrics, and RTL-aware text — while `components/SiteFrame.tsx` is the
-  same mockup as real DOM, which is what the reduced-motion grid shows. The
-  repository still ships **no screenshots**: both are generated in the browser
-  from the project's own copy and accent.
+- Two renderers, one design: `components/three/siteTexture.ts` frames each site as
+  a screen — device bezel, browser chrome, the deployment's real address, and the
+  capture itself in the window — while `components/SiteFrame.tsx` is the same
+  frame as real DOM, which is what the reduced-motion grid shows. They are
+deliberate twins: **change both** when the frame's design changes.
 - **RTL**: the room reads `document.documentElement.dir` when it builds its
   textures, so the Persian and Arabic walls are laid out right-to-left — first
   site on the right — and the camera travels that way with them.
@@ -122,14 +122,13 @@ it as lit screens, which the page's own scroll walks you past.
   the check goes through `usePrefersReducedMotion()` in `components/Reveal.tsx`,
   which reads the media query through `useSyncExternalStore` — reading it during
   the first client render would mismatch the server's HTML and throw a hydration
-  error.
-
-### Performance guards
+  error.### Performance guards
 
 - Both canvases are dynamically imported with `ssr: false` and swap in a CSS
-  gradient placeholder while loading.
+gradient placeholder while loading.
 - The render loop pauses (`frameloop="never"`) whenever the section scrolls out
-  of view (`useInView`).
+  of view (`useInView`) — and that same signal gates the screenshots, so the
+  captures are only fetched once the wall is actually reached.
 - Device pixel ratio is capped (`dpr={[1, 1.8]}` / `[1, 1.7]`), and the gallery
   re-asserts its drawing buffer against its own box every frame — see the note on
   R3F's container measurement below.
@@ -147,6 +146,31 @@ the scene at the wrong aspect — visibly stretched — and only in that locale.
 against its host element every frame and corrects the renderer and the store when
 they disagree; it settles within a frame or two and then does nothing.
 
+## Screenshots
+
+The gallery hangs four **real captures** of the studio's live sites on its wall.
+They live in `public/shots/` and every frame reads them through `lib/shots.ts`,
+which pairs a project id with its image, its deployment URL and the address the
+chrome shows.
+
+```bash
+node scripts/capture-shots.mjs               # all four sites
+node scripts/capture-shots.mjs godot-cafe    # just one
+node scripts/capture-shots.mjs --text        # print each page's copy, for the dictionaries
+```
+
+The script drives headless Chrome over the DevTools protocol: it warms the page
+by scrolling it once (so lazy content exists), waits for the webfonts, captures
+beyond the fold, and re-encodes the result at the 964 px the panel's screen area
+actually needs. It also measures each shot and prints the numbers: a WebGL page
+renders to a *flat* canvas in a browser with no GPU and reports no error while
+doing it, so every run prints pixel statistics and warns when a capture looks
+blank.
+
+Re-run it when a site changes: a stale screenshot is a stale claim. Tune
+`VIEWPORT`, `TARGET_WIDTH` and `SETTLE` at the top of the script if a capture
+needs different treatment.
+
 ## Editing content
 
 All copy lives in `lib/dictionaries/`, one file per language, with the same keys
@@ -159,6 +183,7 @@ in each — separate from layout and animation code:
 | `lib/dictionaries/types.ts` | `Dictionary`, derived from `en.ts`, plus the literal unions (`Accent`, `ServiceIconName`) components switch on |
 | `lib/dictionaries/index.ts` | `getDictionary(locale)` |
 | `lib/i18n.ts` | The locale list, per-locale metadata, URL helpers |
+| `lib/shots.ts` | Project id → screenshot, source URL and displayed address |
 | `lib/util.ts` | Helpers (`cn`, `splitEmphasis`, `createRandom`, reduced-motion) |
 
 The English dictionary is the schema: add a field there first, then in the other
@@ -178,9 +203,14 @@ exact substring of the `title`/`headline` line they belong to — that is the wo
   Alireza leads the list.
 - Testimonials (`testimonials.items`) are written as anonymous role + company
   attributions; replace them with real, attributable quotes before publishing.
-- **Case studies (`projects.items`) are illustrative.** The client names,
-  metrics and outcomes were written to demonstrate the layout. Replace them with
-  real, permissioned work — or delete entries; the stack reflows automatically.
+- **The four projects are the studio's own live sites** — an ARN portfolio, Café
+  Godot, Kafe Nooshin and Minus One. Their copy describes what each site actually
+  is and claims nothing about delivery that has not been measured: the invented
+  metrics and years were removed rather than replaced with guesses. Add real
+  figures only when you have them.
+- The frames' address bars show `*.vercel.app` **deployment hosts**, because those
+  are where the sites are served from. When a real domain is attached, update
+  `lib/shots.ts` and re-capture (see **Screenshots**).
 
 ## Design system
 
@@ -207,7 +237,7 @@ Defined once in `app/globals.css`:
 - Custom utilities: `kicker`, `display-type`, `serif-accent`,
   `iridescent-text`, `glass`, `hairline-t`, `hairline-b`.
 - Supporting layers: film grain, aurora wash and a masked grid (`.grain`,
-  `.aurora`, `.grid-pattern` + `.gridlines`, `.gallery-floor`).
+  `.aurora`, `.grid-pattern` + `.gridlines`).
 - Accent tinting is shared: `lib/accents.ts` maps an accent name to the classes
   and colour the Selected Work section and the gallery both use, so the two
   cannot drift apart.
