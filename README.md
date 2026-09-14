@@ -100,17 +100,25 @@ it as lit screens, which the page's own scroll walks you past.
 
 - `components/three/GalleryScene.tsx` is the room: a canvas inside a sticky
   viewport, an opaque background (bloom adds light to transparent pixels and the
-  browser throws it away — see §8.2), a procedurally lit environment, a genuinely
+  browser throws it away — see §8.2), a deliberately dim room (AGENTS.md §8.20: the
+  screens light themselves, so the room's lights are halved), a genuinely
   reflecting floor, and a camera that reads scroll progress from a motion value
   **inside the frame loop**, so scrubbing the gallery never re-renders React.
 - One tall track (`100svh + 62vh per site`) maps scroll distance onto the camera's
   travel. The caption strip, the dots and the scroll markers work exactly as they
   did before the renderer changed.
+- Each screen scrolls **inside its frame**. The frame is two textures — a device
+  *shell* with its window cut out, and the *page* behind it — because one texture
+  cannot do it: scrolling it would take the chrome along. Hover a screen and the
+  wheel reads that page; anywhere else the wheel walks the wall, and either end of
+  a page hands the gesture back, so you can never get stuck inside a frame. A site
+  that fits its window in one screen has nothing to scroll, which is exactly the
+  portfolio's case. Touch is wheel-only today (see AGENTS.md §10.16).
 - Two renderers, one design: `components/three/siteTexture.ts` frames each site as
   a screen — device bezel, browser chrome, the deployment's real address, and the
   capture itself in the window — while `components/SiteFrame.tsx` is the same
   frame as real DOM, which is what the reduced-motion grid shows. They are
-deliberate twins: **change both** when the frame's design changes.
+  deliberate twins: **change both** when the frame's design changes.
 - **RTL**: the room reads `document.documentElement.dir` when it builds its
   textures, so the Persian and Arabic walls are laid out right-to-left — first
   site on the right — and the camera travels that way with them.

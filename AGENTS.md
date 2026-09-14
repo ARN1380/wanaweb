@@ -73,8 +73,9 @@ system, and a contact form that hands off to email.
 | Testimonials | ✅ Done | Three quotes, anonymised attribution |
 | Contact form | ✅ Done | Client validation + `mailto:` handoff (no backend) |
 | **Selected Work** | ✅ Done | Four live sites, sticky-stacked cards |
-| **Site gallery (WebGL room)** | ✅ Done | Real 3D room of the four sites, camera dollied by scroll; screens are real screenshots — see §8.15–8.18 |
+| **Site gallery (WebGL room)** | ✅ Done | Real 3D room of the four sites, camera dollied by scroll; screens are real screenshots and scroll themselves — see §8.15–8.20 |
 | **Real site screenshots** | ✅ Done | `public/shots/` × 4, captured by `scripts/capture-shots.mjs`; wired by `lib/shots.ts` — see §8.18 |
+| **Inner scroll in the frames** | ✅ Done | Hover a screen and the wheel reads it; the gesture hands back to the page at either end — see §8.19 |
 | **FAQ** | ✅ Done | Accessible accordion |
 | **Intro preloader** | ✅ Done | Once per session, respects reduced motion |
 | **Multilingual routing** | ✅ Done | `/` = English, `/fa`, `/ar`; all three prerendered |
@@ -499,6 +500,45 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
 
     A stale capture is a stale claim: re-run the script when a site changes.
 
+19. **The frame is two textures, because one cannot scroll.** The bezel and chrome
+    are a *shell* with its window cut out (`drawDeviceShell`, `alphaTest`, lifted
+    `0.006` in front) and the capture is a separate *page* mesh behind it
+    (`drawPageSheet`), cropped by that window with `repeat`/`offset`. Drawing them
+    into one texture was simpler and is exactly what made inner scrolling
+    impossible: moving it would have taken the chrome with it.
+
+    The page capture is a real screenshot at its own scale, so the window shows
+    `1 - range` of it and `range` is what scrolls. A page no taller than its window
+    shows all of itself and cannot scroll — the portfolio is that case, and its
+    range is `0` by construction rather than by special-casing.
+
+    The interaction, and the three things that make it safe:
+
+    - **Only a hovered screen takes the wheel.** `SitePanel` sets `hovered` from
+      R3F's pointer events, so walking the wall and reading a page never compete.
+      A pointer anywhere else scrolls the page as usual. (In a headless harness the
+      *first* synthetic `pointermove` is consumed as R3F's initial pointer state,
+      so hover needs a second move to register — that is the harness, not the site.)
+    - **Both ends hand the gesture back.** When a page is at its top or its bottom
+      the handler consumes nothing and the wall moves on, so nobody can be trapped
+      inside a frame.
+    - **The listener is non-passive and stops propagation**, because Lenis listens
+      for `wheel` on the window in the bubble phase. Cancel the default without
+      stopping propagation and the page scrolls *and* the screen does.
+
+    The scroll state is one ref owned by `GalleryScene` (`PanelScroll`), filled from
+    the built textures and eased in the frame loop; the panels reach it through
+    callbacks. It is not a style choice: React's compiler refuses to let a ref that
+    arrives as a prop or a hook argument be written to, and it is right to — the
+    mutation belongs where the ref was created.
+
+20. **Nothing in the gallery lights the room brighter than the screens.** The
+    ambient, spot, point and key lights and all three environment `Lightformer`s
+    are at half of the values the room opened with, so the panels' own emissive
+    maps are what carries the composition. If you raise any of them, the screens
+    stop being the brightest thing in the frame and the room starts to look lit
+    rather than *projected*.
+
 ### Placeholders the human must supply
 
 - `site.url` (`https://wanaweb.studio`) — used as `metadataBase` and in JSON-LD.
@@ -552,7 +592,7 @@ These are **conscious choices**, not oversights. Do not "fix" them without readi
 | 13 | Let the gallery frames open the case studies | A frame is currently only a picture; the caption CTA goes to `#contact` | Needs §10.2 first: wrap `SiteFrame` in a link to `/work/[slug]` and let the front frame own the clickable layer, not all four |
 | 14 | A nav entry for the gallery | It is reachable only by scrolling past Work and from the footer's Explore column | At 1024 px the desktop nav has **101 px** of slack and a seventh item needs ~93 px. Re-measure before adding one, and never at 1440 only — the binding width is exactly 1024 |
 | 15 | Guard the hero and lab canvases the same way | §8.17 is a framework-level latch, not a gallery bug — those two canvases are unguarded | Reuse `ViewportGuard`; it is a few lines and needs its own canvas's `gl` and `setSize`. Verify by comparing `canvas.height` with the host's `clientHeight` in each locale |
-| 16 | Inner scroll inside the frames | Requested: each screen should scroll to its own page, so a visitor can see the whole site, not just its top | In progress and **unpushed** — see the 2026-09-14 session-9 log entry for the approach and what is still open |
+| 16 | Touch inner scroll | The frames only scroll for a wheel, so a phone visitor sees each site's top and nothing else | Add `touchmove` on the same seam: `GalleryScene`'s wheel handler is the whole interaction, and it already owns the hand-off logic. Mind Lenis, which uses touch events for its own inertia (§8.19) |
 | 17 | Re-capture before any launch | A stale screenshot is a stale claim; the sites change under it | `node scripts/capture-shots.mjs`, then eyeball the four files in `public/shots/` — the script's statistics prove a frame is not blank, not that it is composed well |
 
 ---
@@ -1089,14 +1129,70 @@ reached and never at page load (§8.18).
   each one is a real, non-blank render; whether a shot crops nicely in the frame is
   a judgement the human has to make — look at `public/shots/` before publishing.
 
-**Not pushed.** The second half of the request — inner scroll inside the frames, by
-wheel over the panel, with the scroll handed back to the page at the end of the
-content — is in progress and unpushed at the human's instruction. See §10.16.
+**Not pushed then.** The second half of the request — inner scroll inside the
+frames — was left unpushed at the human's instruction and is finished below.
 
 **Next agent.** Replace the two remaining invented things once the human supplies
 them: the deployment hosts in the chrome (`lib/shots.ts`) and the fa/ar proof-read
 (§10.10). Re-capture whenever a site changes (§10.17) — none of these frames is a
 claim about today's design otherwise.
+
+### 2026-09-14 · Buffy (session 10) · the frames scroll, and the room stops lighting them
+
+**What I was doing.** Two follow-ups from the human: the screens in the gallery
+should scroll internally (wheel over a frame, chosen in session 9), and the
+three.js lights in that section should come down to half. They then asked for the
+whole thing to be pushed so it could be reviewed on production.
+
+**The inner scroll.** One texture cannot scroll — moving it moves the chrome with
+it — so the frame became **two**: a *shell* (bezel and chrome, window cut out,
+`alphaTest`, lifted `0.006` toward the viewer) and a *page* mesh behind it carrying
+the capture, cropped by that window with `repeat`/`offset`. A page no taller than
+its window shows all of itself and cannot scroll, so the one-viewport portfolio has
+a range of `0` by construction rather than by a special case.
+
+The gesture: only a hovered screen takes the wheel; the event is cancelled *and*
+propagation stopped (Lenis listens for `wheel` on the window in the bubble phase,
+so cancelling alone would scroll the page and the screen together); and both ends
+hand the gesture back, so nobody can be trapped inside a frame. The scroll state is
+one ref owned by `GalleryScene` and eased in the frame loop, with the panels
+reaching it through callbacks — React's compiler refuses to let a ref arriving as a
+prop be written to, and it is right to. See §8.19.
+
+**The lights.** Ambient, spot, point, key and all three environment `Lightformer`s
+halved; the panels' emissive maps now carry the composition on their own (§8.20).
+
+**Verification.** `npx tsc --noEmit` silent · `npm run lint` silent ·
+`npm run build` `Compiled successfully` with all three locales still prerendered.
+
+Then a headless-Chrome probe that drives real wheel events over the canvas — the
+only way to test a gesture without a hand on the mouse:
+
+- Inside the track, in **en** and **fa**: the panel's drawing buffer equals its box,
+  the caption names the frame in front in the right language, both hints render
+  (`hintInner` included), **0 px** of horizontal overflow, **0** console or
+  hydration errors.
+- Pointer off the wall: the wheel moves the document, as it should.
+- Pointer on the front screen: the wheel is consumed — six notches, `scrollY`
+  unchanged, and **55 %** of the viewport's pixels changed, which is the page moving
+  inside the screen rather than the room moving.
+- With the pointer parked and Lenis settled (`drift 0px`), the remaining notches
+  are consumed until the page ends and the *next* one moves the document again —
+  the hand-off, verified rather than assumed.
+- Pointer off the wall again: the wheel walks the wall.
+
+**What I could not verify.** Whether the room's new exposure *looks* right, and
+whether a frame's crop is flattering: the probes prove the screens scroll, are
+correctly proportioned and log nothing, not that they are beautiful. The lights are
+named values in `GalleryScene.tsx` (the key light in `GalleryObjects.tsx`) if they
+want them somewhere other than half.
+
+**Still open from this session.** Asked which non-3D gallery should also carry the
+site images, the human asked for the push first — so the answer is outstanding. The
+reduced-motion grid already renders the captures as real images (`SiteFrame`); the
+**Selected Work cards** are the section that still shows no screenshot, and the
+likely intent. Waiting on their word before touching it. Touch inner scroll is
+§10.16.
 
 
 

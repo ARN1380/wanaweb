@@ -135,13 +135,26 @@ function GalleryStage({ gallery, projects }: ShowcaseProps) {
         />
 
         <div className="pointer-events-none absolute inset-x-0 top-[calc(var(--nav-h)+1.25rem)] z-20">
-          <div className="mx-auto max-w-7xl px-[var(--shell)]">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2.5 px-[var(--shell)]">
             <span className="glass inline-flex items-center gap-2.5 rounded-full px-3.5 py-1.5 font-mono text-[0.6rem] tracking-[0.18em] text-bone/80 uppercase">
               <span
                 aria-hidden="true"
                 className="size-1.5 shrink-0 rounded-full bg-lime"
               />
               {gallery.hint}
+            </span>
+
+            {/*
+              The second gesture needs a pointer and a wheel, so its hint is only
+              offered where it can be used — a touch visitor never sees a promise
+              the section cannot keep.
+            */}
+            <span className="glass hidden items-center gap-2.5 rounded-full px-3.5 py-1.5 font-mono text-[0.6rem] tracking-[0.18em] text-bone/70 uppercase [@media(hover:hover)]:inline-flex">
+              <span
+                aria-hidden="true"
+                className="size-1.5 shrink-0 rounded-full bg-violet"
+              />
+              {gallery.hintInner}
             </span>
           </div>
         </div>

@@ -290,6 +290,7 @@ export const en = {
     emphasis: "one wall",
     body: "The same four sites, this time as themselves. Scroll to walk the wall — the frame that reaches the front is the one the caption describes. Each screen is a real screenshot of the live site, captured at 1440px and hung on the wall as a texture.",
     hint: "Scroll to walk the wall",
+    hintInner: "Hover a frame to read the page",
     cta: "Start something like this",
   },
 
